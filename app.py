@@ -1,5 +1,6 @@
 
 from flask import Flask, render_template, redirect, url_for, request, flash, jsonify, send_file, Response
+from flask_socketio import SocketIO, emit
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from models import db, User, Student, Subject, Grade, Attendance, Enrollment, AcademicYear, Teacher, Assignment, AssignmentTemplate, SubjectTeacher, FeeStructure, FeePayment, FeeReceipt
 from forms import LoginForm, StudentForm, GradeForm, AttendanceForm, SubjectForm
@@ -7,18 +8,8 @@ from werkzeug.utils import secure_filename
 import os
 import json
 import time
-# try:
-#     import pandas as pd
-#     PANDAS_AVAILABLE = True
-# except ImportError:
-#     PANDAS_AVAILABLE = False
-#     pd = None
-# import plotly
-# import plotly.graph_objs as go
-# import plotly.express as px
 from datetime import datetime, timedelta
 from sqlalchemy import func, desc, case
-from werkzeug.utils import secure_filename
 import io
 import csv
 from io import StringIO
@@ -32,52 +23,17 @@ from openpyxl.styles import Font, PatternFill, Alignment
 
 # Initialize Flask app
 app = Flask(__name__)
-
-# Configuration for different environments
-if os.getenv('FLASK_ENV') == 'production':
-    # Production configuration for Vercel
-    app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-production-secret-key-change-this')
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:////tmp/school_management.db')
-    app.config['UPLOAD_FOLDER'] = '/tmp/uploads'
-else:
-    # Development configuration
-    app.config['SECRET_KEY'] = 'your-secret-key-change-in-production'
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///school_management.db'
-    app.config['UPLOAD_FOLDER'] = 'static/uploads'
-
+app.config['SECRET_KEY'] = 'your-secret-key-change-in-production'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///school_management.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 app.config['WTF_CSRF_ENABLED'] = True
 app.config['WTF_CSRF_TIME_LIMIT'] = None
 
 # Initialize extensions
 db.init_app(app)
-
-# Initialize SocketIO only in development
-if os.getenv('FLASK_ENV') != 'production':
-    try:
-        from flask_socketio import SocketIO, emit
-        socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
-    except ImportError:
-        # Fallback if SocketIO is not available
-        class DummySocketIO:
-            def emit(self, *args, **kwargs):
-                pass
-            def run(self, *args, **kwargs):
-                pass
-        socketio = DummySocketIO()
-else:
-    # For production, use a dummy SocketIO to avoid import issues
-    class DummySocketIO:
-        def emit(self, *args, **kwargs):
-            pass
-        def run(self, *args, **kwargs):
-            pass
-    socketio = DummySocketIO()
-    # Define emit for routes that use it
-    def emit(*args, **kwargs):
-        pass
-
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 login_manager.login_message = 'Please log in to access this page.'
@@ -1365,6 +1321,10 @@ def grades():
 def add_grade():
     form = GradeForm()
     
+    # Set default academic year if not provided
+    if not form.academic_year.data:
+        form.academic_year.data = '2024-25'
+    
     # For teachers, restrict to students they teach and subjects they teach
     if current_user.role == 'teacher':
         teacher_students = get_teacher_students(current_user.id)
@@ -1396,23 +1356,30 @@ def add_grade():
             grade_value=form.grade_value.data,
             grade_type=form.grade_type.data,
             semester=form.semester.data,
-            academic_year=form.academic_year.data,
+            academic_year=form.academic_year.data or '2024-25',
+            date_recorded=form.date_recorded.data,
             comments=form.comments.data
         )
-        grade.letter_grade = grade.calculate_letter_grade()
         
-        db.session.add(grade)
-        db.session.commit()
+        # Calculate letter grade
+        grade.letter_grade = form.letter_grade.data if form.letter_grade.data else grade.calculate_letter_grade()
         
-        # Update student GPA
-        student = Student.query.get(grade.student_id)
-        if student:
-            student.gpa = student.calculate_gpa()
+        try:
+            db.session.add(grade)
             db.session.commit()
-        
-        notify_grade_added(grade)
-        flash('Grade added successfully!', 'success')
-        return redirect(url_for('grades'))
+            
+            # Update student GPA
+            student = Student.query.get(grade.student_id)
+            if student:
+                student.gpa = student.calculate_gpa()
+                db.session.commit()
+            
+            flash('Grade added successfully!', 'success')
+            return redirect(url_for('grades'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error saving grade: {str(e)}', 'error')
+            return render_template('grades/form.html', form=form, title='Add Grade')
     
     return render_template('grades/form.html', form=form, title='Add Grade')
 
@@ -1724,11 +1691,6 @@ def student_change_password():
 # Initialize Database
 def init_db():
     with app.app_context():
-        # Create uploads directory if it doesn't exist
-        upload_dir = app.config['UPLOAD_FOLDER']
-        if not os.path.exists(upload_dir):
-            os.makedirs(upload_dir, exist_ok=True)
-        
         db.create_all()
         
         # Create default admin user if not exists
@@ -1742,6 +1704,12 @@ def init_db():
             teacher = User(username='teacher', email='teacher@school.com', role='teacher')
             teacher.set_password('teacher123')
             db.session.add(teacher)
+        
+        # Create student user if not exists
+        if not User.query.filter_by(username='student').first():
+            student_user = User(username='student', email='student@school.com', role='student')
+            student_user.set_password('student123')
+            db.session.add(student_user)
             
         # Create sample subjects if not exist
         if not Subject.query.first():
@@ -1764,6 +1732,13 @@ def init_db():
                 is_current=True
             )
             db.session.add(current_year)
+        
+        db.session.commit()
+        print("Database initialized successfully!")
+        print("Login credentials:")
+        print("  Admin: admin / admin123")
+        print("  Teacher: teacher / teacher123")
+        print("  Student: student / student123")
 # Student-specific routes for viewing their own data
 @app.route('/student/my-grades')
 @login_required
@@ -1953,38 +1928,6 @@ def student_search_fees():
                          status_color=status_color,
                          faculty=enrollment.subject)
 
-def init_db():
-    with app.app_context():
-        db.create_all()
-        
-        # Create admin user if not exists
-        admin = User.query.filter_by(username='admin').first()
-        if not admin:
-            admin = User(username='admin', email='admin@university.edu', role='admin')
-            admin.set_password('admin123')
-            db.session.add(admin)
-        
-        # Create teacher user if not exists
-        teacher = User.query.filter_by(username='teacher').first()
-        if not teacher:
-            teacher = User(username='teacher', email='teacher@university.edu', role='teacher')
-            teacher.set_password('teacher123')
-            db.session.add(teacher)
-        
-        # Create student user if not exists
-        student_user = User.query.filter_by(username='student').first()
-        if not student_user:
-            student_user = User(username='student', email='student@university.edu', role='student')
-            student_user.set_password('student123')
-            db.session.add(student_user)
-        
-        db.session.commit()
-        print("Database initialized successfully!")
-        print("Login credentials:")
-        print("  Admin: admin / admin123")
-        print("  Teacher: teacher / teacher123")
-        print("  Student: student / student123")
-
 # Fee Management Routes
 @app.route('/fees')
 @login_required
@@ -2061,34 +2004,60 @@ def student_fees():
 @app.route('/fees/teacher')
 @login_required
 def teacher_fees():
-    """Teacher fee view - same as admin but view-only"""
+    """Teacher fee view - can view all students fee status"""
     if current_user.role != 'teacher':
         flash('Access denied. Teachers only.', 'error')
         return redirect(url_for('dashboard'))
     
-    # Get all fee structures (same as admin)
+    # Get all fee structures
     fee_structures = FeeStructure.query.filter_by(is_active=True).order_by(FeeStructure.faculty_id, FeeStructure.semester).all()
     
-    # Get summary statistics (same as admin)
-    total_fees_defined = sum(fs.amount for fs in fee_structures)
-    total_payments = db.session.query(func.sum(FeePayment.amount_paid)).scalar() or 0
-    pending_payments = total_fees_defined - total_payments
-    
-    # Get recent payments (same as admin)
-    recent_payments = FeePayment.query.order_by(desc(FeePayment.created_at)).limit(10).all()
-    
-    # Get all students with fee status (same as admin)
+    # Get all active students with their fee calculations
     students = Student.query.filter_by(status='active').all()
+    student_fees = []
     
-    # Use the same admin template but pass teacher role for view-only restrictions
-    return render_template('fees/admin.html',
+    for student in students:
+        # Get student's enrollment to find faculty
+        enrollment = Enrollment.query.filter_by(student_id=student.id, status='enrolled').first()
+        if not enrollment:
+            continue
+            
+        # Get applicable fee structures for this student
+        student_fee_structures = FeeStructure.query.filter_by(
+            faculty_id=enrollment.subject_id,
+            is_active=True
+        ).all()
+        
+        total_fees = sum(fs.amount for fs in student_fee_structures)
+        total_paid = 0
+        has_overdue = False
+        
+        for fee_structure in student_fee_structures:
+            payments = FeePayment.query.filter_by(
+                student_id=student.id,
+                fee_structure_id=fee_structure.id
+            ).all()
+            total_paid += sum(p.amount_paid for p in payments)
+            
+            # Check if overdue
+            if fee_structure.due_date and fee_structure.due_date < datetime.now().date():
+                paid_for_structure = sum(p.amount_paid for p in payments)
+                if paid_for_structure < fee_structure.amount:
+                    has_overdue = True
+        
+        total_pending = max(0, total_fees - total_paid)
+        
+        student_fees.append({
+            'student': student,
+            'total_fees': total_fees,
+            'total_paid': total_paid,
+            'total_pending': total_pending,
+            'has_overdue': has_overdue
+        })
+    
+    return render_template('fees/teacher.html',
                          fee_structures=fee_structures,
-                         total_fees_defined=total_fees_defined,
-                         total_payments=total_payments,
-                         pending_payments=pending_payments,
-                         recent_payments=recent_payments,
-                         students=students,
-                         is_teacher_view=True)  # Flag to indicate this is teacher view
+                         student_fees=student_fees)
 
 @app.route('/fees/admin')
 @login_required
@@ -2099,15 +2068,28 @@ def admin_fees():
         return redirect(url_for('dashboard'))
     
     # Get all fee structures
-    fee_structures = FeeStructure.query.filter_by(is_active=True).order_by(FeeStructure.faculty_id, FeeStructure.semester).all()
+    fee_structures = FeeStructure.query.order_by(FeeStructure.faculty_id, FeeStructure.semester).all()
     
-    # Get summary statistics
-    total_fees_defined = sum(fs.amount for fs in fee_structures)
+    # Calculate proper summary statistics
+    # Get all students and their enrollments
+    students = Student.query.filter_by(status='active').all()
+    total_fees_defined = 0
     total_payments = db.session.query(func.sum(FeePayment.amount_paid)).scalar() or 0
-    pending_payments = total_fees_defined - total_payments
     
-    # Get recent payments
-    recent_payments = FeePayment.query.order_by(desc(FeePayment.created_at)).limit(10).all()
+    # Calculate total fees based on student enrollments
+    for student in students:
+        enrollment = Enrollment.query.filter_by(student_id=student.id, status='enrolled').first()
+        if enrollment:
+            student_fee_structures = FeeStructure.query.filter_by(
+                faculty_id=enrollment.subject_id,
+                is_active=True
+            ).all()
+            total_fees_defined += sum(fs.amount for fs in student_fee_structures)
+    
+    pending_payments = max(0, total_fees_defined - total_payments)
+    
+    # Get recent payments with relationships loaded
+    recent_payments = FeePayment.query.join(Student).join(FeeStructure).order_by(desc(FeePayment.created_at)).limit(10).all()
     
     return render_template('fees/admin.html',
                          fee_structures=fee_structures,
@@ -2184,7 +2166,66 @@ def add_fee_payment():
     # Get data for dropdowns
     students = Student.query.filter_by(status='active').all()
     fee_structures = FeeStructure.query.filter_by(is_active=True).all()
-    return render_template('fees/add_payment.html', students=students, fee_structures=fee_structures)
+    today = datetime.now().date()
+    return render_template('fees/add_payment.html', 
+                         students=students, 
+                         fee_structures=fee_structures,
+                         today=today)
+
+@app.route('/fees/structure/toggle/<int:structure_id>')
+@login_required
+def toggle_fee_structure(structure_id):
+    """Admin only - Toggle fee structure active status"""
+    if current_user.role != 'admin':
+        flash('Access denied. Admins only.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    fee_structure = FeeStructure.query.get_or_404(structure_id)
+    fee_structure.is_active = not fee_structure.is_active
+    fee_structure.updated_at = datetime.utcnow()
+    
+    try:
+        db.session.commit()
+        status = 'activated' if fee_structure.is_active else 'deactivated'
+        flash(f'Fee structure {status} successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error updating fee structure: {str(e)}', 'error')
+    
+    return redirect(url_for('admin_fees'))
+
+@app.route('/fees/structure/edit/<int:structure_id>', methods=['GET', 'POST'])
+@login_required
+def edit_fee_structure(structure_id):
+    """Admin only - Edit fee structure"""
+    if current_user.role != 'admin':
+        flash('Access denied. Admins only.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    fee_structure = FeeStructure.query.get_or_404(structure_id)
+    
+    if request.method == 'POST':
+        try:
+            fee_structure.name = request.form['name']
+            fee_structure.description = request.form.get('description', '')
+            fee_structure.amount = float(request.form['amount'])
+            fee_structure.fee_type = request.form['fee_type']
+            fee_structure.faculty_id = int(request.form['faculty_id']) if request.form['faculty_id'] else None
+            fee_structure.semester = request.form.get('semester') if request.form.get('semester') else None
+            fee_structure.academic_year = request.form['academic_year']
+            fee_structure.due_date = datetime.strptime(request.form['due_date'], '%Y-%m-%d').date() if request.form.get('due_date') else None
+            fee_structure.updated_at = datetime.utcnow()
+            
+            db.session.commit()
+            flash('Fee structure updated successfully!', 'success')
+            return redirect(url_for('admin_fees'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating fee structure: {str(e)}', 'error')
+    
+    # Get faculties for dropdown
+    faculties = Subject.query.all()
+    return render_template('fees/edit_structure.html', fee_structure=fee_structure, faculties=faculties)
 
 @app.route('/fees/reports')
 @login_required
@@ -2260,63 +2301,6 @@ def export_fee_data(export_type):
     flash('Invalid export format.', 'error')
     return redirect(url_for('fee_reports'))
 
-@app.route('/fees/structure/edit/<int:fee_id>', methods=['GET', 'POST'])
-@login_required
-def edit_fee_structure(fee_id):
-    """Admin only - Edit existing fee structure"""
-    if current_user.role != 'admin':
-        flash('Access denied. Admins only.', 'error')
-        return redirect(url_for('dashboard'))
-    
-    fee_structure = FeeStructure.query.get_or_404(fee_id)
-    
-    if request.method == 'POST':
-        try:
-            fee_structure.name = request.form['name']
-            fee_structure.description = request.form.get('description', '')
-            fee_structure.amount = float(request.form['amount'])
-            fee_structure.fee_type = request.form['fee_type']
-            fee_structure.faculty_id = int(request.form['faculty_id']) if request.form['faculty_id'] else None
-            fee_structure.semester = request.form.get('semester') if request.form.get('semester') else None
-            fee_structure.academic_year = request.form['academic_year']
-            fee_structure.due_date = datetime.strptime(request.form['due_date'], '%Y-%m-%d').date() if request.form.get('due_date') else None
-            
-            db.session.commit()
-            flash('Fee structure updated successfully!', 'success')
-            return redirect(url_for('admin_fees'))
-        except Exception as e:
-            flash(f'Error updating fee structure: {str(e)}', 'error')
-    
-    # Get faculties for dropdown
-    faculties = Subject.query.all()
-    return render_template('fees/edit_structure.html', fee_structure=fee_structure, faculties=faculties)
-
-@app.route('/fees/structure/toggle/<int:fee_id>')
-@login_required
-def toggle_fee_structure(fee_id):
-    """Admin only - Toggle fee structure active status"""
-    if current_user.role != 'admin':
-        flash('Access denied. Admins only.', 'error')
-        return redirect(url_for('dashboard'))
-    
-    fee_structure = FeeStructure.query.get_or_404(fee_id)
-    fee_structure.is_active = not fee_structure.is_active
-    
-    try:
-        db.session.commit()
-        status = 'activated' if fee_structure.is_active else 'deactivated'
-        flash(f'Fee structure "{fee_structure.name}" has been {status}.', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Error updating fee structure: {str(e)}', 'error')
-    
-    return redirect(url_for('admin_fees'))
-
 if __name__ == '__main__':
     init_db()
-    if os.getenv('FLASK_ENV') == 'production':
-        # Production mode - just export the app
-        pass
-    else:
-        # Development mode
-        socketio.run(app, debug=True, host='0.0.0.0', port=5000)
+    socketio.run(app, debug=True, host='0.0.0.0', port=5000)

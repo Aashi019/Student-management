@@ -80,7 +80,7 @@
                                         <br><small style="color: var(--text-secondary);">{{ fee.fee_structure.description }}</small>
                                     {% endif %}
                                 </td>
-                                <td>{{ fee.fee_structure.semester }}</td>
+                                <td>{{ fee.fee_structure.semester or 'N/A' }}</td>
                                 <td>₨{{ "{:,.0f}".format(fee.total_amount) }}</td>
                                 <td>₨{{ "{:,.0f}".format(fee.paid_amount) }}</td>
                                 <td>₨{{ "{:,.0f}".format(fee.pending_amount) }}</td>
