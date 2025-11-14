@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+
+{% block title %}My Attendance - Student Portal{% endblock %}
+{% block page_title %}My Attendance{% endblock %}
+
+{% block content %}
+<div class="student-portal animate-fade-in-up">
+    {% if not student %}
+    <div class="search-section">
+        <div class="card">
+            <div class="card-header">
+                <h4><i class="fas fa-search"></i> Find Your Attendance</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('student_search_attendance') }}">
+                    <div class="form-group">
+                        <label for="search_term">Enter Your Name or Student ID:</label>
+                        <input type="text" class="form-control" id="search_term" name="search_term" 
+                               placeholder="e.g., John Doe or 12345" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Search My Attendance
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="page-header-actions">
+        <div>
+            <h2><i class="fas fa-calendar-check"></i> Attendance Record for {{ student.full_name }}</h2>
+            <p>Student ID: {{ student.student_id }}</p>
+        </div>
+        <div class="attendance-stats">
+            <div class="stat-card">
+                <div class="stat-value">{{ "%.1f"|format(attendance_percentage) }}%</div>
+                <div class="stat-label">Attendance Rate</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ present_days }}</div>
+                <div class="stat-label">Present Days</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ total_days }}</div>
+                <div class="stat-label">Total Days</div>
+            </div>
+        </div>
+    </div>
+
+    {% if attendance %}
+        <div class="attendance-list">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-list"></i> Attendance History</h4>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                    <th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in attendance %}
+                                <tr>
+                                    <td>{{ record.date.strftime('%Y-%m-%d') }}</td>
+                                    <td>
+                                        {% if record.status == 'present' %}
+                                            <span class="badge badge-success">Present</span>
+                                        {% elif record.status == 'absent' %}
+                                            <span class="badge badge-danger">Absent</span>
+                                        {% else %}
+                                            <span class="badge badge-warning">{{ record.status.title() }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ record.notes or '-' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center mt-3">
+            <a href="{{ url_for('student_my_attendance') }}" class="btn btn-secondary">
+                <i class="fas fa-search"></i> Search Another Student
+            </a>
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> No attendance records found for {{ student.full_name }}.
+        </div>
+        
+        <div class="text-center">
+            <a href="{{ url_for('student_my_attendance') }}" class="btn btn-secondary">
+                <i class="fas fa-search"></i> Search Another Student
+            </a>
+        </div>
+    {% endif %}
+    {% endif %}
+</div>
+
+<style>
+.search-section {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.page-header-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 30px;
+}
+
+.attendance-stats {
+    display: flex;
+    gap: 20px;
+}
+
+.stat-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    min-width: 100px;
+}
+
+.stat-value {
+    font-size: 1.8rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.badge {
+    font-size: 0.85rem;
+}
+
+@media (max-width: 768px) {
+    .page-header-actions {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    
+    .attendance-stats {
+        margin-top: 20px;
+        justify-content: center;
+    }
+}
+</style>
+{% endblock %}

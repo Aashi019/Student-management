@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+
+{% block title %}Settings - Student Management System{% endblock %}
+{% block page_title %}Settings{% endblock %}
+
+{% block content %}
+<div class="content animate-fade-in-up">
+    <!-- Profile Settings -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Profile Settings</h2>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('settings') }}" enctype="multipart/form-data">
+                <input type="hidden" name="form_type" value="profile">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                    <div class="form-group">
+                        <label class="form-label">First Name</label>
+                        <input type="text" name="first_name" class="form-control" 
+                               value="{{ current_user.first_name or '' }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Last Name</label>
+                        <input type="text" name="last_name" class="form-control" 
+                               value="{{ current_user.last_name or '' }}" required>
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" class="form-control" 
+                               value="{{ current_user.email }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Phone</label>
+                        <input type="tel" name="phone" class="form-control" 
+                               value="{{ current_user.phone or '' }}">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Profile Image URL</label>
+                    <input type="text" name="profile_image" class="form-control" 
+                           value="{{ current_user.profile_image or '' }}" 
+                           placeholder="https://example.com/profile.jpg">
+                </div>
+                
+                <div style="text-align: right; margin-top: 1rem;">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Profile
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Change Password -->
+    <div class="card" style="margin-top: 1.5rem;">
+        <div class="card-header">
+            <h2 class="card-title">Change Password</h2>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('settings') }}">
+                <input type="hidden" name="form_type" value="password">
+                <div style="max-width: 500px;">
+                    <div class="form-group">
+                        <label class="form-label">Current Password</label>
+                        <input type="password" name="current_password" class="form-control" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">New Password</label>
+                        <input type="password" name="new_password" class="form-control" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Confirm New Password</label>
+                        <input type="password" name="confirm_password" class="form-control" required>
+                    </div>
+                    
+                    <div style="text-align: right; margin-top: 1rem;">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-key"></i> Change Password
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Database Management -->
+    <div class="card" style="margin-top: 1.5rem;">
+        <div class="card-header">
+            <h2 class="card-title">Database Management</h2>
+        </div>
+        <div class="card-body">
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <button onclick="backupDatabase()" class="btn btn-secondary">
+                    <i class="fas fa-download"></i> Backup Database
+                </button>
+                <button onclick="resetDatabase()" class="btn btn-danger">
+                    <i class="fas fa-exclamation-triangle"></i> Reset Database
+                </button>
+            </div>
+            <p style="color: var(--text-secondary); font-size: 0.875rem; margin-top: 1rem;">
+                <strong>Warning:</strong> Resetting the database will delete all data and recreate initial sample data. This action cannot be undone.
+            </p>
+        </div>
+    </div>
+
+    <!-- About -->
+    <div class="card" style="margin-top: 1.5rem;">
+        <div class="card-header">
+            <h2 class="card-title">About</h2>
+        </div>
+        <div class="card-body">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                <div>
+                    <p><strong>Application Version:</strong> 1.0.0</p>
+                    <p><strong>Database:</strong> SQLite</p>
+                    <p><strong>Framework:</strong> Flask 2.3.3</p>
+                </div>
+                <div>
+                    <p><strong>Real-time:</strong> Socket.IO</p>
+                    <p><strong>Design:</strong> Jony Ive Principles</p>
+                    <p><strong>Last Updated:</strong> {{ now.strftime('%Y-%m-%d') if now else 'N/A' }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function backupDatabase() {
+    if (confirm('Create a backup of the current database?')) {
+        window.location.href = '/api/backup';
+    }
+}
+
+function resetDatabase() {
+    if (confirm('WARNING: This will delete ALL data and cannot be undone. Are you absolutely sure?')) {
+        if (confirm('Last confirmation: Reset the entire database?')) {
+            fetch('/api/reset-database', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                window.location.reload();
+            })
+            .catch(error => {
+                alert('Error resetting database: ' + error);
+            });
+        }
+    }
+}
+</script>
+{% endblock %}

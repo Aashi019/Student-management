@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+
+{% block title %}My Grades - Student Portal{% endblock %}
+{% block page_title %}My Grades{% endblock %}
+
+{% block content %}
+<div class="student-portal animate-fade-in-up">
+    {% if not student %}
+    <div class="search-section">
+        <div class="card">
+            <div class="card-header">
+                <h4><i class="fas fa-search"></i> Find Your Grades</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('student_search_grades') }}">
+                    <div class="form-group">
+                        <label for="search_term">Enter Your Name or Student ID:</label>
+                        <input type="text" class="form-control" id="search_term" name="search_term" 
+                               placeholder="e.g., Aashika KC or STU000001" required>
+                        <small class="form-text text-muted">
+                            Available Student IDs: STU000001 to STU000010
+                        </small>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Search My Grades
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    
+    <!-- Student Info Header -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h4 class="mb-1">{{ student.first_name }} {{ student.last_name }}</h4>
+                    <p class="text-muted mb-0">Student ID: {{ student.student_id }}</p>
+                    {% set enrollment = student.enrollments.first() %}
+                    <p class="text-muted mb-0">Faculty: {{ enrollment.subject.name if enrollment and enrollment.subject else 'Not Assigned' }}</p>
+                </div>
+                <div class="col-md-4 text-right">
+                    <a href="{{ url_for('student_my_grades') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-search"></i> Search Again
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grade Summary -->
+    {% if grades %}
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-primary">{{ grades|length }}</h3>
+                    <p class="text-muted mb-0">Faculty Enrolled</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-success">{{ (grades|selectattr('grade_value', 'ge', 40)|list)|length }}</h3>
+                    <p class="text-muted mb-0">Passed</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-danger">{{ (grades|selectattr('grade_value', 'lt', 40)|list)|length }}</h3>
+                    <p class="text-muted mb-0">Failed</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-info">{{ "%.1f"|format(grades|sum(attribute='grade_value')/grades|length) if grades else 0 }}</h3>
+                    <p class="text-muted mb-0">Average</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grades by Subject -->
+    <div class="card">
+        <div class="card-header">
+            <h5><i class="fas fa-clipboard-list"></i> Grade Details</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Faculty</th>
+                            <th>Marks</th>
+                            <th>Grade</th>
+                            <th>Status</th>
+                            <th>Exam Type</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for grade in grades %}
+                        <tr class="{% if grade.grade_value >= 40 %}table-success{% else %}table-danger{% endif %}">
+                            <td>
+                                <strong>{{ grade.subject.name if grade.subject else 'Unknown Subject' }}</strong>
+                            </td>
+                            <td>
+                                <span class="badge badge-lg {% if grade.grade_value >= 80 %}badge-success{% elif grade.grade_value >= 60 %}badge-info{% elif grade.grade_value >= 40 %}badge-warning{% else %}badge-danger{% endif %}">
+                                    {{ grade.grade_value }}/100
+                                </span>
+                            </td>
+                            <td>
+                                {% if grade.grade_value >= 80 %}
+                                    <span class="badge badge-success">A</span>
+                                {% elif grade.grade_value >= 60 %}
+                                    <span class="badge badge-info">B</span>
+                                {% elif grade.grade_value >= 40 %}
+                                    <span class="badge badge-warning">C</span>
+                                {% else %}
+                                    <span class="badge badge-danger">F</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if grade.grade_value >= 40 %}
+                                    <span class="text-success"><i class="fas fa-check"></i> Pass</span>
+                                {% else %}
+                                    <span class="text-danger"><i class="fas fa-times"></i> Fail</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ grade.grade_type|capitalize }}</td>
+                            <td>{{ grade.date_recorded.strftime('%B %d, %Y') if grade.date_recorded else 'N/A' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="card">
+        <div class="card-body">
+            <div class="empty-state-large">
+                <i class="fas fa-clipboard-list"></i>
+                <h3>No Grades Yet</h3>
+                <p>No grades have been recorded for {{ student.first_name }} {{ student.last_name }} yet.</p>
+                <a href="{{ url_for('student_my_grades') }}" class="btn btn-primary">
+                    <i class="fas fa-search"></i> Search Again
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

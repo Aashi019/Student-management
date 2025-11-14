@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ 'Edit' if event else 'Add' }} Event - Student Management System{% endblock %}
+{% block page_title %}{{ 'Edit' if event else 'Add' }} Event{% endblock %}
+
+{% block content %}
+<div class="content animate-fade-in-up">
+    <div class="card" style="max-width: 800px; margin: 0 auto;">
+        <div class="card-header">
+            <h2 class="card-title">{{ 'Edit' if event else 'Add' }} Event</h2>
+        </div>
+        <div class="card-body">
+            <form method="POST">
+                {{ form.hidden_tag() }}
+                
+                <div class="form-group">
+                    {{ form.title.label(class="form-label") }}
+                    {{ form.title(class="form-control", placeholder="e.g., Annual Science Fair") }}
+                    {% if form.title.errors %}
+                        <span class="text-danger">{{ form.title.errors[0] }}</span>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    {{ form.description.label(class="form-label") }}
+                    {{ form.description(class="form-control", rows=4, placeholder="Event details...") }}
+                    {% if form.description.errors %}
+                        <span class="text-danger">{{ form.description.errors[0] }}</span>
+                    {% endif %}
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        {{ form.date.label(class="form-label") }}
+                        {{ form.date(class="form-control", type="date") }}
+                        {% if form.date.errors %}
+                            <span class="text-danger">{{ form.date.errors[0] }}</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-group">
+                        {{ form.time.label(class="form-label") }}
+                        {{ form.time(class="form-control", type="time") }}
+                        {% if form.time.errors %}
+                            <span class="text-danger">{{ form.time.errors[0] }}</span>
+                        {% endif %}
+                        <small class="text-secondary">Leave blank for all-day events</small>
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        {{ form.event_type.label(class="form-label") }}
+                        {{ form.event_type(class="form-control") }}
+                        {% if form.event_type.errors %}
+                            <span class="text-danger">{{ form.event_type.errors[0] }}</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-group">
+                        {{ form.location.label(class="form-label") }}
+                        {{ form.location(class="form-control", placeholder="e.g., Main Auditorium") }}
+                        {% if form.location.errors %}
+                            <span class="text-danger">{{ form.location.errors[0] }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+                    <a href="{{ url_for('events') }}" class="btn btn-secondary">Cancel</a>
+                    {{ form.submit(class="btn btn-primary") }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

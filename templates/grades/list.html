@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+
+{% block title %}Grades - Student Management System{% endblock %}
+{% block page_title %}Grades{% endblock %}
+
+{% block content %}
+<div class="content animate-fade-in-up">
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <h2 class="card-title">Grade Management</h2>
+                <p class="text-secondary">Track and manage student academic performance</p>
+            </div>
+            <div>
+                <a href="{{ url_for('add_grade') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add Grade
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div style="margin-bottom: 1.5rem;">
+                <form method="GET" style="display: flex; gap: 1rem;">
+                    <div class="form-group" style="margin: 0; flex: 1;">
+                        <label class="form-label">Filter by Student</label>
+                        <select name="student_id" class="form-control" onchange="this.form.submit()">
+                            <option value="">All Students</option>
+                            {% for student in students %}
+                            <option value="{{ student.id }}" {% if student_filter == student.id %}selected{% endif %}>
+                                {{ student.full_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin: 0; flex: 1;">
+                        <label class="form-label">Filter by Faculty</label>
+                        <select name="subject_id" class="form-control" onchange="this.form.submit()">
+                            <option value="">All Faculties</option>
+                            {% for subject in subjects %}
+                            <option value="{{ subject.id }}" {% if subject_filter == subject.id %}selected{% endif %}>
+                                {{ subject.code }} - {{ subject.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </form>
+            </div>
+            
+            {% if processed_grades %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Student ID</th>
+                        <th>Student Name</th>
+                        <th>Faculty</th>
+                        <th>Percentage</th>
+                        <th>Grade</th>
+                        <th>Remarks</th>
+                        <th>Semester</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for grade in processed_grades %}
+                    <tr>
+                        <td><strong>{{ grade.student_id }}</strong></td>
+                        <td>{{ grade.student_name }}</td>
+                        <td>
+                            <span class="badge badge-{% if grade.faculty == 'BSC-CSIT' %}primary{% else %}info{% endif %}">
+                                {{ grade.faculty }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="percentage-value {% if grade.percentage >= 80 %}high{% elif grade.percentage >= 60 %}medium{% elif grade.percentage >= 40 %}low{% else %}fail{% endif %}">
+                                {{ grade.percentage }}%
+                            </span>
+                        </td>
+                        <td>
+                            <span class="grade-badge grade-{{ grade.letter_grade }}">{{ grade.letter_grade }}</span>
+                        </td>
+                        <td>
+                            <span class="remarks {% if grade.remarks == 'Pass' %}pass{% else %}fail{% endif %}">
+                                {{ grade.remarks }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="semester-badge">{{ grade.semester }} Semester</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div style="text-align: center; padding: 3rem;">
+                <i class="fas fa-chart-line" style="font-size: 4rem; color: var(--gray-300); margin-bottom: 1rem;"></i>
+                <p style="color: var(--text-secondary); font-size: 1.125rem;">No grades found</p>
+                <p style="color: var(--text-tertiary); margin-bottom: 1.5rem;">Start by adding grades for students</p>
+                <a href="{{ url_for('add_grade') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add Grade
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.grade-badge {
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    display: inline-block;
+}
+
+.grade-A, .grade-A- {
+    background: rgba(52, 199, 89, 0.1);
+    color: #34c759;
+}
+
+.grade-B+, .grade-B, .grade-B- {
+    background: rgba(48, 176, 199, 0.1);
+    color: #30b0c7;
+}
+
+.grade-C+, .grade-C, .grade-C- {
+    background: rgba(255, 204, 0, 0.1);
+    color: #ffcc00;
+}
+
+.grade-D+, .grade-D {
+    background: rgba(255, 149, 0, 0.1);
+    color: #ff9500;
+}
+
+.grade-F {
+    background: rgba(255, 59, 48, 0.1);
+    color: #ff3b30;
+}
+
+.percentage-value {
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+}
+
+.percentage-value.high {
+    background: rgba(52, 199, 89, 0.1);
+    color: #34c759;
+}
+
+.percentage-value.medium {
+    background: rgba(48, 176, 199, 0.1);
+    color: #30b0c7;
+}
+
+.percentage-value.low {
+    background: rgba(255, 204, 0, 0.1);
+    color: #ffcc00;
+}
+
+.percentage-value.fail {
+    background: rgba(255, 59, 48, 0.1);
+    color: #ff3b30;
+}
+
+.remarks.pass {
+    color: #34c759;
+    font-weight: 600;
+}
+
+.remarks.fail {
+    color: #ff3b30;
+    font-weight: 600;
+}
+
+.semester-badge {
+    background: rgba(88, 86, 214, 0.1);
+    color: #5856d6;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.badge {
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    display: inline-block;
+}
+
+.badge-primary {
+    background: rgba(0, 122, 255, 0.1);
+    color: #007aff;
+}
+
+.badge-info {
+    background: rgba(48, 176, 199, 0.1);
+    color: #30b0c7;
+}
+</style>
+{% endblock %}

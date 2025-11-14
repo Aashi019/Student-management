@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+
+{% block title %}Reports - Student Management System{% endblock %}
+{% block page_title %}Reports{% endblock %}
+
+{% block content %}
+<div class="content animate-fade-in-up">
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <h2 class="card-title">Reports</h2>
+                <p class="text-secondary">Generate and export various reports</p>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="reports-grid">
+                <!-- Student Reports -->
+                <div class="report-card">
+                    <div class="report-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <i class="fas fa-user-graduate"></i>
+                    </div>
+                    <h3 class="report-title">Student Report</h3>
+                    <p class="report-description">Complete student information with enrollment details</p>
+                    <div class="report-actions">
+                        <button onclick="exportReport('students', 'csv')" class="btn btn-sm btn-secondary">
+                            <i class="fas fa-file-csv"></i> CSV
+                        </button>
+                        <button onclick="exportReport('students', 'json')" class="btn btn-sm btn-secondary">
+                            <i class="fas fa-file-code"></i> JSON
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Attendance Report -->
+                <div class="report-card">
+                    <div class="report-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <h3 class="report-title">Attendance Report</h3>
+                    <p class="report-description">Daily attendance records with statistics</p>
+                    <div class="report-actions">
+                        <button onclick="exportReport('attendance', 'csv')" class="btn btn-sm btn-secondary">
+                            <i class="fas fa-file-csv"></i> CSV
+                        </button>
+                        <button onclick="exportReport('attendance', 'json')" class="btn btn-sm btn-secondary">
+                            <i class="fas fa-file-code"></i> JSON
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Grades Report -->
+                <div class="report-card">
+                    <div class="report-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3 class="report-title">Grades Report</h3>
+                    <p class="report-description">Student grades by subject with GPA</p>
+                    <div class="report-actions">
+                        <button onclick="exportReport('grades', 'csv')" class="btn btn-sm btn-secondary">
+                            <i class="fas fa-file-csv"></i> CSV
+                        </button>
+                        <button onclick="exportReport('grades', 'json')" class="btn btn-sm btn-secondary">
+                            <i class="fas fa-file-code"></i> JSON
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Faculty Report -->
+                <div class="report-card">
+                    <div class="report-icon" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <h3 class="report-title">Faculty Report</h3>
+                    <p class="report-description">Faculty details with enrollment counts</p>
+                    <div class="report-actions">
+                        <button onclick="exportReport('subjects', 'csv')" class="btn btn-sm btn-secondary">
+                            <i class="fas fa-file-csv"></i> CSV
+                        </button>
+                        <button onclick="exportReport('subjects', 'json')" class="btn btn-sm btn-secondary">
+                            <i class="fas fa-file-code"></i> JSON
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.reports-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+.report-card {
+    background: white;
+    border: 1px solid var(--gray-200);
+    border-radius: 12px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+}
+.report-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+.report-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    color: white;
+    margin-bottom: 1rem;
+}
+.report-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 0.5rem 0;
+}
+.report-description {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin: 0 0 1rem 0;
+}
+.report-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+</style>
+
+<script>
+function exportReport(reportType, format) {
+    window.location.href = `/api/${reportType}/export?format=${format}`;
+}
+
+function exportCustomReport() {
+    const fromDate = document.getElementById('fromDate').value;
+    const toDate = document.getElementById('toDate').value;
+    const reportType = document.getElementById('reportType').value;
+    
+    if (!fromDate || !toDate) {
+        alert('Please select both from and to dates');
+        return;
+    }
+
+    window.location.href = `/api/${reportType}/export?format=csv&from=${fromDate}&to=${toDate}`;
+}
+</script>
+{% endblock %}

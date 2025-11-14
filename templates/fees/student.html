@@ -1,0 +1,242 @@
+{% extends 'base.html' %}
+
+{% block title %}My Fees - Student Management System{% endblock %}
+{% block page_title %}My Fees{% endblock %}
+
+{% block content %}
+<div class="content animate-fade-in-up">
+    <!-- Fee Summary Cards -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+        <div class="card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+            <div class="card-body">
+                <h3 style="margin: 0 0 0.5rem 0; font-size: 1.5rem;">₨{{ "{:,.0f}".format(total_fees) }}</h3>
+                <p style="margin: 0; opacity: 0.9;">Total Fees</p>
+            </div>
+        </div>
+        
+        <div class="card" style="background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); color: white;">
+            <div class="card-body">
+                <h3 style="margin: 0 0 0.5rem 0; font-size: 1.5rem;">₨{{ "{:,.0f}".format(total_paid) }}</h3>
+                <p style="margin: 0; opacity: 0.9;">Paid Amount</p>
+            </div>
+        </div>
+        
+        <div class="card" style="background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%); color: white;">
+            <div class="card-body">
+                <h3 style="margin: 0 0 0.5rem 0; font-size: 1.5rem;">₨{{ "{:,.0f}".format(total_pending) }}</h3>
+                <p style="margin: 0; opacity: 0.9;">Pending Amount</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Information -->
+    <div class="card" style="margin-bottom: 2rem;">
+        <div class="card-header">
+            <h2 class="card-title">Student Information</h2>
+        </div>
+        <div class="card-body">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                <div>
+                    <p><strong>Name:</strong> {{ student.first_name }} {{ student.last_name }}</p>
+                    <p><strong>Student ID:</strong> {{ student.student_id }}</p>
+                    <p><strong>Email:</strong> {{ student.email }}</p>
+                </div>
+                <div>
+                    <p><strong>Grade Level:</strong> {{ student.grade_level }}</p>
+                    <p><strong>Status:</strong> <span class="status-badge status-{{ student.status }}">{{ student.status.title() }}</span></p>
+                    <p><strong>GPA:</strong> {{ student.gpa }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fee Details -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Fee Details</h2>
+        </div>
+        <div class="card-body">
+            {% if fee_summary %}
+                <div style="overflow-x: auto;">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Fee Type</th>
+                                <th>Semester</th>
+                                <th>Total Amount</th>
+                                <th>Paid Amount</th>
+                                <th>Pending Amount</th>
+                                <th>Due Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for fee in fee_summary %}
+                            <tr>
+                                <td>
+                                    <strong>{{ fee.fee_structure.name }}</strong>
+                                    {% if fee.fee_structure.description %}
+                                        <br><small style="color: var(--text-secondary);">{{ fee.fee_structure.description }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>{{ fee.fee_structure.semester }}</td>
+                                <td>₨{{ "{:,.0f}".format(fee.total_amount) }}</td>
+                                <td>₨{{ "{:,.0f}".format(fee.paid_amount) }}</td>
+                                <td>₨{{ "{:,.0f}".format(fee.pending_amount) }}</td>
+                                <td>
+                                    {% if fee.fee_structure.due_date %}
+                                        {{ fee.fee_structure.due_date.strftime('%d %b %Y') }}
+                                        {% if fee.is_overdue %}
+                                            <span class="status-badge status-overdue">Overdue</span>
+                                        {% endif %}
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if fee.pending_amount <= 0 %}
+                                        <span class="status-badge status-paid">Paid</span>
+                                    {% elif fee.is_overdue %}
+                                        <span class="status-badge status-overdue">Overdue</span>
+                                    {% else %}
+                                        <span class="status-badge status-pending">Pending</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if fee.payments %}
+                                        <button onclick="viewPayments({{ fee.fee_structure.id }})" class="btn btn-secondary btn-sm">
+                                            <i class="fas fa-receipt"></i> View Receipts
+                                        </button>
+                                    {% else %}
+                                        <small style="color: var(--text-secondary);">No payments</small>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p style="text-align: center; color: var(--text-secondary); padding: 2rem;">
+                    No fee information available.
+                </p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Payment History -->
+    {% if fee_summary %}
+    <div class="card" style="margin-top: 2rem;">
+        <div class="card-header">
+            <h2 class="card-title">Recent Payment History</h2>
+        </div>
+        <div class="card-body">
+            {% set recent_payments = [] %}
+            {% for fee in fee_summary %}
+                {% for payment in fee.payments %}
+                    {{ recent_payments.append(payment) or '' }}
+                {% endfor %}
+            {% endfor %}
+            
+            {% if recent_payments %}
+                <div style="overflow-x: auto;">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Fee Type</th>
+                                <th>Amount</th>
+                                <th>Method</th>
+                                <th>Receipt No.</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in recent_payments|sort(attribute='payment_date', reverse=true) %}
+                            <tr>
+                                <td>{{ payment.payment_date.strftime('%d %b %Y') }}</td>
+                                <td>{{ payment.fee_structure.name }}</td>
+                                <td>₨{{ "{:,.0f}".format(payment.amount_paid) }}</td>
+                                <td>{{ payment.payment_method.title().replace('_', ' ') }}</td>
+                                <td><code>{{ payment.receipt_number }}</code></td>
+                                <td><span class="status-badge status-{{ payment.payment_status }}">{{ payment.payment_status.title() }}</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p style="text-align: center; color: var(--text-secondary); padding: 1rem;">
+                    No payment history available.
+                </p>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.status-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.status-paid {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status-overdue {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.status-completed {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-active {
+    background: #d4edda;
+    color: #155724;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--gray-200);
+    text-align: left;
+}
+
+.table th {
+    font-weight: 600;
+    background: var(--gray-50);
+}
+
+.btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+}
+</style>
+
+<script>
+function viewPayments(feeStructureId) {
+    // This would typically open a modal or navigate to a detailed payment view
+    alert('Payment details for fee structure ID: ' + feeStructureId + '\n\nThis feature can be enhanced to show detailed payment information in a modal.');
+}
+</script>
+{% endblock %}

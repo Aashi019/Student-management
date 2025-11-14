@@ -1,0 +1,341 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ student.full_name }} - Student Management System{% endblock %}
+{% block page_title %}Student Details{% endblock %}
+
+{% block header_actions %}
+    <a href="{{ url_for('edit_student', id=student.id) }}" class="btn btn-primary">
+        <i class="fas fa-edit"></i>
+        Edit Student
+    </a>
+    <a href="{{ url_for('students') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i>
+        Back to List
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="content animate-fade-in-up">
+    <!-- Student Profile Card -->
+    <div class="card" style="margin-bottom: 1.5rem;">
+        <div class="card-body">
+            <div style="display: flex; gap: 2rem; align-items: start;">
+                <!-- Avatar -->
+                <div style="flex-shrink: 0;">
+                    <div style="width: 120px; height: 120px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 2.5rem; box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);">
+                        {{ student.first_name[0] }}{{ student.last_name[0] }}
+                    </div>
+                </div>
+                
+                <!-- Student Info -->
+                <div style="flex: 1;">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                        <div>
+                            <h2 style="font-size: 1.75rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.5rem;">
+                                {{ student.full_name }}
+                            </h2>
+                            <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                                <span style="font-family: monospace; color: var(--text-secondary); font-weight: 600;">
+                                    {{ student.student_id }}
+                                </span>
+                                <span class="badge badge-{{ 'success' if student.status == 'active' else 'warning' }}">
+                                    {{ student.status.title() }}
+                                </span>
+                                <span class="badge badge-info">Grade {{ student.grade_level }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Stats -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-top: 1.5rem;">
+                        <div style="padding: 1rem; background: var(--bg-secondary); border-radius: var(--border-radius-sm);">
+                            <div style="font-size: 0.8125rem; color: var(--text-tertiary); margin-bottom: 0.25rem;">GPA</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary-color);">
+                                {{ "%.2f"|format(student.gpa) }}
+                            </div>
+                        </div>
+                        <div style="padding: 1rem; background: var(--bg-secondary); border-radius: var(--border-radius-sm);">
+                            <div style="font-size: 0.8125rem; color: var(--text-tertiary); margin-bottom: 0.25rem;">Attendance Rate</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--success-color);">
+                                {{ attendance_rate }}%
+                            </div>
+                        </div>
+                        <div style="padding: 1rem; background: var(--bg-secondary); border-radius: var(--border-radius-sm);">
+                            <div style="font-size: 0.8125rem; color: var(--text-tertiary); margin-bottom: 0.25rem;">Age</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-secondary);">
+                                {{ student.age }} years
+                            </div>
+                        </div>
+                        <div style="padding: 1rem; background: var(--bg-secondary); border-radius: var(--border-radius-sm);">
+                            <div style="font-size: 0.8125rem; color: var(--text-tertiary); margin-bottom: 0.25rem;">Enrolled</div>
+                            <div style="font-size: 1.125rem; font-weight: 600; color: var(--text-secondary);">
+                                {{ student.enrollment_date.strftime('%b %Y') if student.enrollment_date else 'N/A' }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Two Column Layout -->
+    <div class="content-grid-2col">
+        <!-- Personal Information -->
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fas fa-user"></i> Personal Information</h3>
+            </div>
+            <div class="card-body">
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">Full Name</div>
+                        <div class="info-value">{{ student.full_name }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Gender</div>
+                        <div class="info-value">{{ student.gender.title() if student.gender else 'N/A' }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Date of Birth</div>
+                        <div class="info-value">{{ student.date_of_birth.strftime('%B %d, %Y') if student.date_of_birth else 'N/A' }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Age</div>
+                        <div class="info-value">{{ student.age }} years</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Contact Information -->
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fas fa-address-book"></i> Contact Information</h3>
+            </div>
+            <div class="card-body">
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">Email</div>
+                        <div class="info-value">
+                            <a href="mailto:{{ student.email }}" style="color: var(--primary-color);">{{ student.email }}</a>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Phone</div>
+                        <div class="info-value">{{ student.phone or 'N/A' }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Address</div>
+                        <div class="info-value">{{ student.address or 'N/A' }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">City, Province</div>
+                        <div class="info-value">{{ student.city or 'N/A' }}, {{ student.state or 'N/A' }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Emergency Contact -->
+    <div class="card" style="margin-top: 1.5rem;">
+        <div class="card-header">
+            <h3><i class="fas fa-phone-alt"></i> Emergency Contact</h3>
+        </div>
+        <div class="card-body">
+            <div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+                <div class="info-item">
+                    <div class="info-label">Contact Name</div>
+                    <div class="info-value">{{ student.emergency_contact or 'N/A' }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Contact Phone</div>
+                    <div class="info-value">{{ student.emergency_phone or 'N/A' }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Academic Information -->
+    <div class="card" style="margin-top: 1.5rem;">
+        <div class="card-header">
+            <h3><i class="fas fa-graduation-cap"></i> Academic Information</h3>
+        </div>
+        <div class="card-body">
+            <div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                <div class="info-item">
+                    <div class="info-label">Grade Level</div>
+                    <div class="info-value">Grade {{ student.grade_level }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">GPA</div>
+                    <div class="info-value gpa-value-detail gpa-{% if student.gpa >= 3.5 %}high{% elif student.gpa >= 2.5 %}medium{% else %}low{% endif %}">
+                        {{ "%.2f"|format(student.gpa) }}
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Enrollment Date</div>
+                    <div class="info-value">{{ student.enrollment_date.strftime('%B %d, %Y') if student.enrollment_date else 'N/A' }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Expected Graduation</div>
+                    <div class="info-value">{{ student.graduation_year or 'N/A' }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Status</div>
+                    <div class="info-value">
+                        <span class="badge badge-{{ 'success' if student.status == 'active' else 'warning' }}">
+                            {{ student.status.title() }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Grades and Attendance -->
+    <div class="content-grid-2col" style="margin-top: 1.5rem;">
+        <!-- Recent Grades -->
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fas fa-chart-line"></i> Recent Grades</h3>
+            </div>
+            <div class="card-body" style="padding: 0;">
+                {% if grades %}
+                    <div style="overflow-x: auto;">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Subject</th>
+                                    <th>Grade</th>
+                                    <th>Type</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for grade in grades[:10] %}
+                                <tr>
+                                    <td>{{ grade.subject.name }}</td>
+                                    <td>
+                                        <span class="badge badge-{% if grade.grade_value >= 85 %}success{% elif grade.grade_value >= 70 %}info{% else %}warning{% endif %}">
+                                            {{ grade.letter_grade }} ({{ grade.grade_value }})
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span style="font-size: 0.875rem; color: var(--text-tertiary);">
+                                            {{ grade.grade_type.title() }}
+                                        </span>
+                                    </td>
+                                    <td style="font-size: 0.875rem; color: var(--text-tertiary);">
+                                        {{ grade.date_recorded.strftime('%b %d, %Y') if grade.date_recorded else 'N/A' }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div style="text-align: center; padding: 2rem; color: var(--text-tertiary);">
+                        <i class="fas fa-chart-line" style="font-size: 2rem; opacity: 0.3; margin-bottom: 0.5rem;"></i>
+                        <p>No grades recorded yet</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Recent Attendance -->
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fas fa-calendar-check"></i> Recent Attendance</h3>
+                <span style="font-size: 0.875rem; color: var(--text-tertiary);">Last 30 days</span>
+            </div>
+            <div class="card-body" style="padding: 0;">
+                {% if attendance %}
+                    <div style="overflow-x: auto;">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Period</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in attendance[:10] %}
+                                <tr>
+                                    <td>{{ record.date.strftime('%b %d, %Y') }}</td>
+                                    <td style="font-size: 0.875rem; color: var(--text-tertiary);">
+                                        {{ record.period.title() if record.period else 'N/A' }}
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-{% if record.status == 'present' %}success{% elif record.status == 'late' %}warning{% else %}danger{% endif %}">
+                                            {{ record.status.title() }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div style="text-align: center; padding: 2rem; color: var(--text-tertiary);">
+                        <i class="fas fa-calendar-check" style="font-size: 2rem; opacity: 0.3; margin-bottom: 0.5rem;"></i>
+                        <p>No attendance records yet</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.info-label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.info-value {
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.gpa-value-detail {
+    font-weight: 600;
+}
+
+.gpa-value-detail.gpa-high {
+    color: var(--success-color);
+}
+
+.gpa-value-detail.gpa-medium {
+    color: var(--warning-color);
+}
+
+.gpa-value-detail.gpa-low {
+    color: var(--danger-color);
+}
+
+@media (max-width: 768px) {
+    .info-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+}
+</style>
+{% endblock %}

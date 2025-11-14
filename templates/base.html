@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Modern Student Management System">
+    <title>{% block title %}Student Management System{% endblock %}</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style_modern.css') }}">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Socket.IO -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    
+    {% block head %}{% endblock %}
+</head>
+<body>
+    {% if current_user.is_authenticated %}
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <a href="{{ url_for('dashboard') }}" class="sidebar-logo">
+                    <i class="fas fa-graduation-cap"></i>
+                    <div class="sidebar-logo-text">
+                        <h1>EduManage</h1>
+                        <p>School Management</p>
+                    </div>
+                </a>
+            </div>
+            
+            <nav class="sidebar-nav">
+                {% if current_user.role == 'student' %}
+                <!-- Student Portal Navigation -->
+                <div class="nav-section">
+                    <div class="nav-section-title">Student Portal</div>
+                    <a href="{{ url_for('student_dashboard') }}" class="nav-link {{ 'active' if request.endpoint == 'student_dashboard' }}">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="{{ url_for('student_profile') }}" class="nav-link {{ 'active' if request.endpoint and 'student_profile' in request.endpoint }}">
+                        <i class="fas fa-user"></i>
+                        <span>My Profile</span>
+                    </a>
+                    <a href="{{ url_for('student_my_grades') }}" class="nav-link {{ 'active' if request.endpoint and 'student_my_grades' in request.endpoint }}">
+                        <i class="fas fa-star"></i>
+                        <span>My Grades</span>
+                    </a>
+                    <a href="{{ url_for('student_my_attendance') }}" class="nav-link {{ 'active' if request.endpoint and 'student_my_attendance' in request.endpoint }}">
+                        <i class="fas fa-calendar-check"></i>
+                        <span>My Attendance</span>
+                    </a>
+                    <a href="{{ url_for('student_my_fees') }}" class="nav-link {{ 'active' if request.endpoint and 'student_my_fees' in request.endpoint }}">
+                        <i class="fas fa-money-bill-wave"></i>
+                        <span>My Fees</span>
+                    </a>
+                </div>
+                {% else %}
+                <!-- Admin/Teacher Navigation -->
+                <div class="nav-section">
+                    <div class="nav-section-title">Main</div>
+                    <a href="{{ url_for('dashboard') }}" class="nav-link {{ 'active' if request.endpoint == 'dashboard' }}">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </div>
+                
+                <div class="nav-section">
+                    <div class="nav-section-title">Management</div>
+                    <a href="{{ url_for('students') }}" class="nav-link {{ 'active' if request.endpoint and 'students' in request.endpoint and 'student_' not in request.endpoint }}">
+                        <i class="fas fa-user-graduate"></i>
+                        <span>Students</span>
+                    </a>
+                    <a href="{{ url_for('subjects') }}" class="nav-link {{ 'active' if request.endpoint and 'subject' in request.endpoint }}">
+                        <i class="fas fa-graduation-cap"></i>
+                        <span>Faculties</span>
+                    </a>
+                    <a href="{{ url_for('grades') }}" class="nav-link {{ 'active' if request.endpoint and 'grades' == request.endpoint }}">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Grades</span>
+                    </a>
+                    <a href="{{ url_for('attendance') }}" class="nav-link {{ 'active' if request.endpoint and 'attendance' == request.endpoint }}">
+                        <i class="fas fa-calendar-check"></i>
+                        <span>Attendance</span>
+                    </a>
+                    <a href="{{ url_for('fees') }}" class="nav-link {{ 'active' if request.endpoint and 'fees' in request.endpoint }}">
+                        <i class="fas fa-money-bill"></i>
+                        <span>Fees</span>
+                    </a>
+                </div>
+                
+                <div class="nav-section">
+                    <div class="nav-section-title">Other</div>
+                    <a href="{{ url_for('reports') }}" class="nav-link {{ 'active' if request.endpoint and 'report' in request.endpoint }}">
+                        <i class="fas fa-file-chart-line"></i>
+                        <span>Reports</span>
+                    </a>
+                    <a href="{{ url_for('settings') }}" class="nav-link {{ 'active' if request.endpoint and 'setting' in request.endpoint }}">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
+                    </a>
+                </div>
+                {% endif %}
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar">
+                        {% if current_user.role == 'student' %}
+                            {{ current_user.username[0].upper() }}{{ current_user.username[1].upper() if current_user.username|length > 1 else '' }}
+                        {% else %}
+                            {{ current_user.username[0].upper() }}
+                        {% endif %}
+                    </div>
+                    <div class="user-details">
+                        <h4>{{ current_user.username }}</h4>
+                        <p>{{ current_user.role.title() }}</p>
+                    </div>
+                </div>
+                <a href="{{ url_for('logout') }}" class="btn btn-danger btn-block">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="content-header">
+                <div class="content-header-inner">
+                    <div>
+                        <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
+                        {% block page_subtitle %}{% endblock %}
+                    </div>
+                    <div class="header-actions">
+                        {% block header_actions %}{% endblock %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="content-body">
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}">
+                                <i class="fas fa-{{ 'check-circle' if category == 'success' else 'exclamation-triangle' if category == 'warning' else 'times-circle' if category == 'danger' else 'info-circle' }}"></i>
+                                <span>{{ message }}</span>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                
+                <!-- Main Content -->
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+    {% else %}
+    <!-- Login Page - No Sidebar -->
+    <div class="login-wrapper">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        <i class="fas fa-{{ 'check-circle' if category == 'success' else 'exclamation-triangle' if category == 'warning' else 'times-circle' if category == 'danger' else 'info-circle' }}"></i>
+                        <span>{{ message }}</span>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <!-- Login Content (uses same content block) -->
+        {{ self.content() }}
+    </div>
+    {% endif %}
+    
+    <!-- JavaScript -->
+    <script>
+        // Mobile sidebar toggle
+        const sidebar = document.getElementById('sidebar');
+        const menuToggle = document.getElementById('menuToggle');
+        
+        if (menuToggle) {
+            menuToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('open');
+            });
+        }
+        
+        // Auto-hide flash messages after 5 seconds
+        document.addEventListener('DOMContentLoaded', () => {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    alert.style.opacity = '0';
+                    alert.style.transform = 'translateY(-20px)';
+                    setTimeout(() => alert.remove(), 300);
+                }, 5000);
+            });
+        });
+    </script>
+    
+    <!-- Socket.IO is initialized in dashboard.js -->
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,449 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if student %}Edit Student{% else %}Add Student{% endif %} - Student Management System{% endblock %}
+{% block page_title %}{% if student %}Edit Student{% else %}Add New Student{% endif %}{% endblock %}
+
+{% block header_actions %}
+    <a href="{{ url_for('students') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i>
+        Back to Students
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="content animate-fade-in-up">
+    <div class="card">
+        <div class="card-header">
+            <h3>{% if student %}Edit Student Information{% else %}Add New Student{% endif %}</h3>
+            <p style="color: var(--text-tertiary); font-size: 0.875rem; margin-top: 0.25rem;">
+                {% if student %}Update student details and information{% else %}Enter all required information for the new student{% endif %}
+            </p>
+        </div>
+        
+        <div class="card-body">
+            <form method="POST" enctype="multipart/form-data">
+                {{ form.hidden_tag() }}
+                
+                {% if form.errors %}
+                    <div class="alert alert-danger" style="margin-bottom: 1.5rem;">
+                        <h4><i class="fas fa-exclamation-triangle"></i> Please correct the following errors:</h4>
+                        <ul style="margin: 0.5rem 0 0 1.5rem;">
+                            {% for field, errors in form.errors.items() %}
+                                {% for error in errors %}
+                                    <li><strong>{{ form[field].label.text }}:</strong> {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+            
+            <!-- Photo Upload Section -->
+            <div class="photo-section">
+                <div class="photo-preview">
+                    {% if student and student.photo_filename %}
+                        <img id="photoPreview" src="{{ url_for('static', filename='uploads/' + student.photo_filename) }}" 
+                             alt="Student Photo" class="photo-img">
+                    {% else %}
+                        <div id="photoPreview" class="photo-placeholder">
+                            <i class="fas fa-camera"></i>
+                            <span>Upload Photo</span>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="photo-controls">
+                    {{ form.photo.label(class="btn btn-secondary") }}
+                    {{ form.photo(style="display: none;", onchange="previewPhoto(this)") }}
+                    {% if student and student.photo_filename %}
+                        <button type="button" class="btn btn-danger btn-sm" onclick="removePhoto()">
+                            <i class="fas fa-trash"></i>
+                            Remove
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Personal Information -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="fas fa-user"></i>
+                    Personal Information
+                </h3>
+                
+                <div class="form-grid">
+                    <div class="form-group">
+                        {{ form.first_name.label(class="form-label required") }}
+                        {{ form.first_name(class="form-control") }}
+                    </div>
+                    
+                    <div class="form-group">
+                        {{ form.last_name.label(class="form-label required") }}
+                        {{ form.last_name(class="form-control") }}
+                    </div>
+                    
+                    <div class="form-group">
+                        {{ form.date_of_birth.label(class="form-label required") }}
+                        {{ form.date_of_birth(class="form-control") }}
+                    </div>
+                    
+                    <div class="form-group">
+                        {{ form.gender.label(class="form-label required") }}
+                        {{ form.gender(class="form-control") }}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Contact Information -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="fas fa-envelope"></i>
+                    Contact Information
+                </h3>
+                
+                <div class="form-grid">
+                    <div class="form-group">
+                        {{ form.email.label(class="form-label required") }}
+                        {{ form.email(class="form-control") }}
+                    </div>
+                    
+                    <div class="form-group">
+                        {{ form.phone.label(class="form-label") }}
+                        {{ form.phone(class="form-control") }}
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    {{ form.address.label(class="form-label") }}
+                    {{ form.address(class="form-control", rows="3") }}
+                </div>
+                
+                <div class="form-grid">
+                    <div class="form-group">
+                        {{ form.city.label(class="form-label") }}
+                        {{ form.city(class="form-control") }}
+                    </div>
+                    
+                    <div class="form-group">
+                        {{ form.state.label(class="form-label") }}
+                        {{ form.state(class="form-control") }}
+                    </div>
+                    
+                    <div class="form-group">
+                        {{ form.zip_code.label(class="form-label") }}
+                        {{ form.zip_code(class="form-control") }}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Emergency Contact -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="fas fa-phone"></i>
+                    Emergency Contact
+                </h3>
+                
+                <div class="form-grid">
+                    <div class="form-group">
+                        {{ form.emergency_contact.label(class="form-label") }}
+                        {{ form.emergency_contact(class="form-control") }}
+                    </div>
+                    
+                    <div class="form-group">
+                        {{ form.emergency_phone.label(class="form-label") }}
+                        {{ form.emergency_phone(class="form-control") }}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Academic Information -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="fas fa-graduation-cap"></i>
+                    Academic Information
+                </h3>
+                
+                <div class="form-grid">
+                    <div class="form-group">
+                        {{ form.grade_level.label(class="form-label required") }}
+                        {{ form.grade_level(class="form-control") }}
+                    </div>
+                    
+                    <div class="form-group">
+                        {{ form.graduation_year.label(class="form-label") }}
+                        {{ form.graduation_year(class="form-control") }}
+                    </div>
+                </div>
+                </div>
+                
+                <!-- Form Actions -->
+                <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--border-color);">
+                    <a href="{{ url_for('students') }}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i>
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i>
+                        {% if student %}Update Student{% else %}Add Student{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function previewPhoto(input) {
+    const preview = document.getElementById('photoPreview');
+    
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            preview.innerHTML = `<img src="${e.target.result}" alt="Preview" class="photo-img">`;
+        };
+        
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+function removePhoto() {
+    const preview = document.getElementById('photoPreview');
+    const fileInput = document.querySelector('input[type="file"]');
+    
+    preview.innerHTML = `
+        <div class="photo-placeholder">
+            <i class="fas fa-camera"></i>
+            <span>Upload Photo</span>
+        </div>
+    `;
+    
+    fileInput.value = '';
+}
+
+// Auto-calculate graduation year based on grade level
+document.addEventListener('DOMContentLoaded', function() {
+    const gradeSelect = document.getElementById('grade_level');
+    const graduationYearInput = document.getElementById('graduation_year');
+    
+    if (gradeSelect && graduationYearInput) {
+        gradeSelect.addEventListener('change', function() {
+            const currentYear = new Date().getFullYear();
+            const grade = parseInt(this.value) || 0;
+            
+            if (grade > 0 && grade <= 12) {
+                const yearsToGraduation = 12 - grade;
+                const graduationYear = currentYear + yearsToGraduation;
+                graduationYearInput.value = graduationYear;
+            }
+        });
+    }
+});
+
+// Form validation
+document.querySelector('.student-form').addEventListener('submit', function(e) {
+    const requiredFields = this.querySelectorAll('[required]');
+    let isValid = true;
+    
+    requiredFields.forEach(field => {
+        const formGroup = field.closest('.form-group');
+        const errorMsg = formGroup.querySelector('.field-error');
+        
+        if (!field.value.trim()) {
+            isValid = false;
+            field.classList.add('error');
+            
+            if (!errorMsg) {
+                const error = document.createElement('div');
+                error.className = 'field-error';
+                error.textContent = 'This field is required';
+                formGroup.appendChild(error);
+            }
+        } else {
+            field.classList.remove('error');
+            if (errorMsg) {
+                errorMsg.remove();
+            }
+        }
+    });
+    
+    if (!isValid) {
+        e.preventDefault();
+        const firstError = this.querySelector('.error');
+        if (firstError) {
+            firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            firstError.focus();
+        }
+    }
+});
+</script>
+
+<style>
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    font-size: 0.875rem;
+}
+
+.breadcrumb-item {
+    color: var(--text-secondary);
+    text-decoration: none;
+}
+
+.breadcrumb-item:hover {
+    color: var(--primary-color);
+}
+
+.breadcrumb-item.active {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.breadcrumb i {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+}
+
+.form-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.form-header h2 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.form-subtitle {
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.photo-section {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: var(--bg-tertiary);
+    border-radius: 0.75rem;
+    border: 2px dashed var(--border-medium);
+}
+
+.photo-preview {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 4px solid var(--border-light);
+}
+
+.photo-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.photo-placeholder {
+    width: 100%;
+    height: 100%;
+    background: var(--bg-secondary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+}
+
+.photo-placeholder i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.photo-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.form-section {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: var(--bg-secondary);
+    border-radius: 0.75rem;
+    border: 1px solid var(--border-light);
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.section-title i {
+    color: var(--primary-color);
+}
+
+.form-label.required::after {
+    content: ' *';
+    color: var(--danger-color);
+}
+
+.form-control.error {
+    border-color: var(--danger-color);
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.field-error {
+    color: var(--danger-color);
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.field-error::before {
+    content: '\f06a';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border-light);
+}
+
+@media (max-width: 768px) {
+    .photo-section {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+}
+</style>
+{% endblock %}

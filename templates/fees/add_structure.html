@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Fee Structure{% endblock %}
+{% block page_title %}Add Fee Structure{% endblock %}
+
+{% block content %}
+<div class="content animate-fade-in-up">
+    <div style="max-width: 800px; margin: 0 auto;">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Add New Fee Structure</h2>
+                <p style="margin: 0.5rem 0 0 0; color: var(--text-secondary);">
+                    Define a new fee type for students (e.g., Tuition, Exam, Library fees)
+                </p>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                        <div class="form-group">
+                            <label class="form-label" for="name">Fee Name *</label>
+                            <input type="text" id="name" name="name" class="form-control" 
+                                   placeholder="e.g., Tuition Fee" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="amount">Amount (₨) *</label>
+                            <input type="number" id="amount" name="amount" class="form-control" 
+                                   placeholder="78000" min="0" step="0.01" required>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                        <div class="form-group">
+                            <label class="form-label" for="fee_type">Fee Type *</label>
+                            <select id="fee_type" name="fee_type" class="form-control" required>
+                                <option value="">Select fee type...</option>
+                                <option value="semester">Semester Fee</option>
+                                <option value="annual">Annual Fee</option>
+                                <option value="monthly">Monthly Fee</option>
+                                <option value="one-time">One-time Fee</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="faculty_id">Faculty</label>
+                            <select id="faculty_id" name="faculty_id" class="form-control">
+                                <option value="">All Faculties</option>
+                                {% for faculty in faculties %}
+                                <option value="{{ faculty.id }}">{{ faculty.name }} ({{ faculty.code }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                        <div class="form-group">
+                            <label class="form-label" for="semester">Semester</label>
+                            <select id="semester" name="semester" class="form-control">
+                                <option value="">Select semester...</option>
+                                <option value="1st">1st Semester</option>
+                                <option value="2nd">2nd Semester</option>
+                                <option value="3rd">3rd Semester</option>
+                                <option value="4th">4th Semester</option>
+                                <option value="5th">5th Semester</option>
+                                <option value="6th">6th Semester</option>
+                                <option value="7th">7th Semester</option>
+                                <option value="8th">8th Semester</option>
+                            </select>
+                            <small class="form-text">Leave empty for annual or one-time fees</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="academic_year">Academic Year *</label>
+                            <input type="text" id="academic_year" name="academic_year" class="form-control" 
+                                   value="2024-25" placeholder="2024-25" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 1.5rem;">
+                        <label class="form-label" for="due_date">Due Date</label>
+                        <input type="date" id="due_date" name="due_date" class="form-control">
+                        <small class="form-text">Optional: Set a due date for this fee</small>
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 2rem;">
+                        <label class="form-label" for="description">Description</label>
+                        <textarea id="description" name="description" class="form-control" rows="3" 
+                                  placeholder="Optional description of this fee..."></textarea>
+                    </div>
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <a href="{{ url_for('admin_fees') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Fee Management
+                        </a>
+                        
+                        <div style="display: flex; gap: 1rem;">
+                            <button type="reset" class="btn btn-secondary">
+                                <i class="fas fa-undo"></i> Reset
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Fee Structure
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Fee Structure Examples -->
+        <div class="card" style="margin-top: 2rem;">
+            <div class="card-header">
+                <h3 class="card-title">Common Fee Structure Examples</h3>
+            </div>
+            <div class="card-body">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+                    <div style="padding: 1rem; background: var(--gray-50); border-radius: 6px;">
+                        <h4 style="margin: 0 0 0.5rem 0; font-size: 0.875rem; color: var(--primary-color);">Tuition Fee</h4>
+                        <p style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">
+                            ₨78,000 per semester<br>
+                            Type: Semester<br>
+                            Due: Start of semester + 30 days
+                        </p>
+                    </div>
+                    
+                    <div style="padding: 1rem; background: var(--gray-50); border-radius: 6px;">
+                        <h4 style="margin: 0 0 0.5rem 0; font-size: 0.875rem; color: var(--primary-color);">Exam Fee</h4>
+                        <p style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">
+                            ₨5,000 per semester<br>
+                            Type: Semester<br>
+                            Due: Before exam period
+                        </p>
+                    </div>
+                    
+                    <div style="padding: 1rem; background: var(--gray-50); border-radius: 6px;">
+                        <h4 style="margin: 0 0 0.5rem 0; font-size: 0.875rem; color: var(--primary-color);">Registration Fee</h4>
+                        <p style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">
+                            ₨3,000 one-time<br>
+                            Type: One-time<br>
+                            Due: At admission
+                        </p>
+                    </div>
+                    
+                    <div style="padding: 1rem; background: var(--gray-50); border-radius: 6px;">
+                        <h4 style="margin: 0 0 0.5rem 0; font-size: 0.875rem; color: var(--primary-color);">Library Fee</h4>
+                        <p style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">
+                            ₨2,000 per semester<br>
+                            Type: Semester<br>
+                            Due: With tuition fee
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--gray-300);
+    border-radius: 6px;
+    font-size: 0.875rem;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus {
+    outline: 0;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(79, 70, 229, 0.25);
+}
+
+.form-text {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+select.form-control {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.5rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    padding-right: 2.5rem;
+}
+</style>
+
+<script>
+// Auto-fill semester when fee type changes
+document.getElementById('fee_type').addEventListener('change', function() {
+    const semesterField = document.getElementById('semester');
+    const dueDateField = document.getElementById('due_date');
+    
+    if (this.value === 'annual' || this.value === 'one-time') {
+        semesterField.value = '';
+        semesterField.disabled = true;
+    } else {
+        semesterField.disabled = false;
+    }
+    
+    // Set default due date based on fee type
+    if (this.value === 'semester') {
+        // Set due date to 30 days from start of semester
+        const startDate = new Date('2024-08-01');
+        startDate.setDate(startDate.getDate() + 30);
+        dueDateField.value = startDate.toISOString().split('T')[0];
+    }
+});
+</script>
+{% endblock %}

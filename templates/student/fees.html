@@ -1,0 +1,208 @@
+{% extends 'base.html' %}
+
+{% block title %}Check Fee Status - Student Portal{% endblock %}
+{% block page_title %}Check My Fee Status{% endblock %}
+
+{% block content %}
+<div class="student-portal animate-fade-in-up">
+    <div class="search-container" style="max-width: 600px; margin: 0 auto;">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <i class="fas fa-money-bill-wave"></i> Fee Status Lookup
+                </h2>
+                <p style="margin: 0.5rem 0 0 0; color: var(--text-secondary);">
+                    Enter your name or student ID to check your fee payment status
+                </p>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('student_search_fees') }}">
+                    <div class="form-group">
+                        <label class="form-label" for="search_term">
+                            <i class="fas fa-search"></i> Student Name or ID
+                        </label>
+                        <input type="text" 
+                               id="search_term" 
+                               name="search_term" 
+                               class="form-control" 
+                               placeholder="Enter your full name or student ID (e.g., STU000001)"
+                               required>
+                        <small class="form-text">
+                            You can search by your full name or student ID
+                        </small>
+                    </div>
+                    <div style="text-align: center; margin-top: 1.5rem;">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search"></i> Check Fee Status
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {% if student %}
+    <!-- Fee Status Results -->
+    <div class="results-container" style="max-width: 800px; margin: 2rem auto 0;">
+        <!-- Student Info Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3>
+                    <i class="fas fa-user-graduate"></i> {{ student.full_name }}
+                </h3>
+                <p style="margin: 0.5rem 0 0 0; color: var(--text-secondary);">
+                    {{ student.student_id }} • {{ faculty.code if faculty else 'Unknown Faculty' }} • {{ student.grade_level }}
+                </p>
+            </div>
+            <div class="card-body">
+                <!-- Overall Status -->
+                <div class="status-summary" style="text-align: center; padding: 1.5rem; margin-bottom: 2rem; border-radius: 8px; background: var(--card-bg);">
+                    <div class="status-badge badge badge-{{ status_color }}" style="font-size: 1.2rem; padding: 0.5rem 1rem;">
+                        <i class="fas fa-{% if fee_status == 'Paid' %}check-circle{% elif fee_status == 'Partially Paid' %}clock{% else %}exclamation-circle{% endif %}"></i>
+                        {{ fee_status }}
+                    </div>
+                    <div style="margin-top: 1rem;">
+                        <div class="fee-totals" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1rem;">
+                            <div class="fee-total-item">
+                                <div style="font-size: 2rem; font-weight: bold; color: var(--primary-color);">₨{{ "{:,}".format(total_fees) }}</div>
+                                <div style="color: var(--text-secondary);">Total Fees</div>
+                            </div>
+                            <div class="fee-total-item">
+                                <div style="font-size: 2rem; font-weight: bold; color: var(--success-color);">₨{{ "{:,}".format(total_paid) }}</div>
+                                <div style="color: var(--text-secondary);">Total Paid</div>
+                            </div>
+                            <div class="fee-total-item">
+                                <div style="font-size: 2rem; font-weight: bold; color: var(--danger-color);">₨{{ "{:,}".format(total_pending) }}</div>
+                                <div style="color: var(--text-secondary);">Total Pending</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fee Breakdown -->
+                {% if fee_summary %}
+                <h4 style="margin-bottom: 1rem;">
+                    <i class="fas fa-list"></i> Fee Breakdown
+                </h4>
+                
+                {% for item in fee_summary %}
+                <div class="fee-item" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 1.5rem; margin-bottom: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <div>
+                            <h5 style="margin: 0; color: var(--primary-color);">{{ item.structure.fee_type.title() }} Fee</h5>
+                            <p style="margin: 0.25rem 0 0 0; color: var(--text-secondary); font-size: 0.9rem;">
+                                {{ item.structure.description }}
+                            </p>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 1.2rem; font-weight: bold;">₨{{ "{:,}".format(item.structure.amount) }}</div>
+                            <div style="font-size: 0.9rem; color: var(--text-secondary);">Total Amount</div>
+                        </div>
+                    </div>
+                    
+                    <div class="payment-status" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="status-box" style="padding: 1rem; background: rgba(40, 167, 69, 0.1); border-radius: 6px; text-align: center;">
+                            <div style="font-size: 1.1rem; font-weight: bold; color: var(--success-color);">₨{{ "{:,}".format(item.paid_amount) }}</div>
+                            <div style="color: var(--text-secondary); font-size: 0.9rem;">Paid</div>
+                        </div>
+                        <div class="status-box" style="padding: 1rem; background: rgba(220, 53, 69, 0.1); border-radius: 6px; text-align: center;">
+                            <div style="font-size: 1.1rem; font-weight: bold; color: var(--danger-color);">₨{{ "{:,}".format(item.pending_amount) }}</div>
+                            <div style="color: var(--text-secondary); font-size: 0.9rem;">Pending</div>
+                        </div>
+                    </div>
+
+                    <!-- Payment History -->
+                    {% if item.payments %}
+                    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                        <h6 style="margin-bottom: 0.5rem; color: var(--text-secondary);">Payment History:</h6>
+                        {% for payment in item.payments %}
+                        <div style="font-size: 0.9rem; padding: 0.25rem 0; display: flex; justify-content: space-between;">
+                            <span>{{ payment.payment_date.strftime('%d %b %Y') }}</span>
+                            <span style="font-weight: bold;">₨{{ "{:,}".format(payment.amount) }}</span>
+                            {% if payment.payment_method %}
+                            <span style="color: var(--text-secondary);">({{ payment.payment_method.title() }})</span>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                {% else %}
+                <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                    <i class="fas fa-info-circle" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                    <p>No fee structures found for your faculty.</p>
+                </div>
+                {% endif %}
+
+                <div style="text-align: center; margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
+                    <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0;">
+                        <i class="fas fa-info-circle"></i> 
+                        For payment inquiries or discrepancies, please contact the accounts office.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.fee-totals {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+.fee-total-item {
+    padding: 1rem;
+    text-align: center;
+    background: var(--sidebar-bg);
+    border-radius: 8px;
+}
+
+.payment-status {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+@media (max-width: 768px) {
+    .fee-totals {
+        grid-template-columns: 1fr;
+    }
+    
+    .payment-status {
+        grid-template-columns: 1fr;
+    }
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.badge {
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.badge-success {
+    background-color: rgba(40, 167, 69, 0.15);
+    color: var(--success-color);
+}
+
+.badge-warning {
+    background-color: rgba(255, 193, 7, 0.15);
+    color: var(--warning-color);
+}
+
+.badge-danger {
+    background-color: rgba(220, 53, 69, 0.15);
+    color: var(--danger-color);
+}
+</style>
+{% endblock %}

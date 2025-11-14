@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block title %}Bulk Attendance - Student Management System{% endblock %}
+{% block page_title %}Bulk Attendance{% endblock %}
+
+{% block content %}
+<div class="content animate-fade-in-up">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Record Bulk Attendance</h2>
+        </div>
+        <div class="card-body">
+            <form method="POST">
+                <div style="display: grid; grid-template-columns: 1fr; gap: 1rem; margin-bottom: 2rem;">
+                    <div class="form-group">
+                        <label class="form-label">Date</label>
+                        <input type="date" name="date" class="form-control" value="{{ today }}" required>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 1rem; padding: 1rem; background: var(--bg-info); border-radius: var(--radius-md); border-left: 4px solid var(--primary-color);">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-info-circle" style="color: var(--primary-color);"></i>
+                        <span style="font-weight: 600; color: var(--primary-color);">Period Assignment:</span>
+                    </div>
+                    <p style="margin: 0.5rem 0 0 1.5rem; color: var(--text-secondary); font-size: 0.875rem;">
+                        Periods are automatically assigned based on faculty: <strong>BCA students → Morning</strong> | <strong>BSC-CSIT students → Day</strong>
+                    </p>
+                </div>
+                
+                <div style="margin-bottom: 1rem; padding: 1rem; background: var(--bg-secondary); border-radius: var(--radius-md);">
+                    <div style="display: flex; gap: 1rem; justify-content: space-between; align-items: center;">
+                        <span style="font-weight: 600;">Quick Actions:</span>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button type="button" class="btn btn-sm btn-success" onclick="markAll('present')">
+                                <i class="fas fa-check"></i> Mark All Present
+                            </button>
+                            <button type="button" class="btn btn-sm btn-danger" onclick="markAll('absent')">
+                                <i class="fas fa-times"></i> Mark All Absent
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Student ID</th>
+                            <th>Name</th>
+                            <th>Grade</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students %}
+                        <tr>
+                            <td>{{ student.student_id }}</td>
+                            <td><strong>{{ student.full_name }}</strong></td>
+                            <td>{{ student.grade_level }}</td>
+                            <td>
+                                <select name="status_{{ student.id }}" class="form-control status-select" required>
+                                    <option value="present">Present</option>
+                                    <option value="absent">Absent</option>
+                                    <option value="late">Late</option>
+                                    <option value="excused">Excused</option>
+                                </select>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Attendance
+                    </button>
+                    <a href="{{ url_for('attendance') }}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function markAll(status) {
+    const selects = document.querySelectorAll('.status-select');
+    selects.forEach(select => {
+        select.value = status;
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,344 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Student Management System{% endblock %}
+{% block page_title %}Dashboard Overview{% endblock %}
+
+{% block header_actions %}
+{% if current_user.role in ['admin', 'teacher'] %}
+<a href="{{ url_for('add_student') }}" class="btn btn-primary">
+    <i class="fas fa-user-plus"></i>
+    Add Student
+</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in-up">
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon students">
+                <i class="fas fa-user-graduate"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">{{ total_students }}</div>
+                <div class="stat-label">Total Students</div>
+                <div class="stat-change positive">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>+{{ recent_enrollments }} this month</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon subjects">
+                <i class="fas fa-graduation-cap"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">{{ total_subjects }}</div>
+                <div class="stat-label">Total Faculties</div>
+                <div class="stat-change">
+                    <i class="fas fa-check"></i>
+                    <span>Active faculties</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon attendance">
+                <i class="fas fa-calendar-check"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">{{ attendance_rate }}%</div>
+                <div class="stat-label">Attendance Rate</div>
+                <div class="stat-change {% if attendance_rate >= 90 %}positive{% elif attendance_rate >= 80 %}{% else %}negative{% endif %}">
+                    <i class="fas fa-{% if attendance_rate >= 90 %}arrow-up{% elif attendance_rate >= 80 %}minus{% else %}arrow-down{% endif %}"></i>
+                    <span>This month</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon performance">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">3.2</div>
+                <div class="stat-label">Average GPA</div>
+                <div class="stat-change positive">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>+0.2 this semester</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions Grid -->
+    {% if current_user.role in ['admin', 'teacher'] %}
+    <div class="card" style="margin-top: 1.5rem;">
+        <div class="card-header">
+            <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+        </div>
+        <div class="card-body">
+            <div class="btn-group" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                {% if current_user.role == 'admin' %}
+                <a href="{{ url_for('add_student') }}" class="btn btn-primary">
+                    <i class="fas fa-user-plus"></i>
+                    Add New Student
+                </a>
+                <a href="{{ url_for('add_subject') }}" class="btn btn-secondary">
+                    <i class="fas fa-graduation-cap"></i>
+                    Add Faculty
+                </a>
+                {% endif %}
+                {% if current_user.role in ['admin', 'teacher'] %}
+                <a href="{{ url_for('record_attendance') }}" class="btn btn-info">
+                    <i class="fas fa-calendar-check"></i>
+                    Take Attendance
+                </a>
+                <a href="{{ url_for('add_grade') }}" class="btn btn-success">
+                    <i class="fas fa-chart-line"></i>
+                    Enter Grades
+                </a>
+                {% endif %}
+                {% if current_user.role == 'admin' %}
+                <a href="{{ url_for('admin_fees') }}" class="btn btn-warning">
+                    <i class="fas fa-money-bill"></i>
+                    Manage Fees
+                </a>
+                {% endif %}
+                {% if current_user.role == 'teacher' %}
+                <a href="{{ url_for('teacher_fees') }}" class="btn btn-warning">
+                    <i class="fas fa-money-bill"></i>
+                    View Fees
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Management Sections Grid -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin: 2rem 0;">
+        <!-- Student Management -->
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fas fa-user-graduate"></i> Student Management</h3>
+            </div>
+            <div class="card-body">
+                <div class="management-stats">
+                    <div class="stat-item">
+                        <span class="stat-number">{{ total_students }}</span>
+                        <span class="stat-label">Total Students</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">{{ recent_enrollments }}</span>
+                        <span class="stat-label">New This Month</span>
+                    </div>
+                </div>
+                <div class="management-actions">
+                    <a href="{{ url_for('students') }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-list"></i> View All Students
+                    </a>
+                    {% if current_user.role in ['admin', 'teacher'] %}
+                    <a href="{{ url_for('add_student') }}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus"></i> Add Student
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Faculty Management -->
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fas fa-graduation-cap"></i> Faculty Management</h3>
+            </div>
+            <div class="card-body">
+                <div class="management-stats">
+                    <div class="stat-item">
+                        <span class="stat-number">{{ total_subjects }}</span>
+                        <span class="stat-label">Total Faculties</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">2</span>
+                        <span class="stat-label">Active Programs</span>
+                    </div>
+                </div>
+                <div class="management-actions">
+                    <a href="{{ url_for('subjects') }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-list"></i> View Faculties
+                    </a>
+                    {% if current_user.role == 'admin' %}
+                    <a href="{{ url_for('add_subject') }}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus"></i> Add Faculty
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Attendance Management -->
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fas fa-calendar-check"></i> Attendance Management</h3>
+            </div>
+            <div class="card-body">
+                <div class="management-stats">
+                    <div class="stat-item">
+                        <span class="stat-number">{{ attendance_rate }}%</span>
+                        <span class="stat-label">This Month</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">Today</span>
+                        <span class="stat-label">Current Status</span>
+                    </div>
+                </div>
+                <div class="management-actions">
+                    <a href="{{ url_for('attendance') }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-list"></i> View Attendance
+                    </a>
+                    {% if current_user.role in ['admin', 'teacher'] %}
+                    <a href="{{ url_for('record_attendance') }}" class="btn btn-info btn-sm">
+                        <i class="fas fa-plus"></i> Take Attendance
+                    </a>
+                    <a href="{{ url_for('bulk_attendance') }}" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-users"></i> Bulk Attendance
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Grade Management -->
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fas fa-chart-line"></i> Grade Management</h3>
+            </div>
+            <div class="card-body">
+                <div class="management-stats">
+                    <div class="stat-item">
+                        <span class="stat-number">{{ grade_distribution|length }}</span>
+                        <span class="stat-label">Grade Types</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">Latest</span>
+                        <span class="stat-label">Semester Grades</span>
+                    </div>
+                </div>
+                <div class="management-actions">
+                    <a href="{{ url_for('grades') }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-list"></i> View Grades
+                    </a>
+                    {% if current_user.role in ['admin', 'teacher'] %}
+                    <a href="{{ url_for('add_grade') }}" class="btn btn-success btn-sm">
+                        <i class="fas fa-plus"></i> Add Grade
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Fee Management -->
+        {% if current_user.role == 'admin' %}
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fas fa-money-bill"></i> Fee Management</h3>
+            </div>
+            <div class="card-body">
+                <div class="management-stats">
+                    <div class="stat-item">
+                        <span class="stat-number">6</span>
+                        <span class="stat-label">Fee Structures</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">₨</span>
+                        <span class="stat-label">Nepali Currency</span>
+                    </div>
+                </div>
+                <div class="management-actions">
+                    <a href="{{ url_for('admin_fees') }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-list"></i> Manage Fees
+                    </a>
+                    <a href="{{ url_for('add_fee_structure') }}" class="btn btn-warning btn-sm">
+                        <i class="fas fa-plus"></i> Add Fee Structure
+                    </a>
+                    <a href="{{ url_for('add_fee_payment') }}" class="btn btn-success btn-sm">
+                        <i class="fas fa-money-bill"></i> Record Payment
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Reports Management -->
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fas fa-file-chart-line"></i> Reports & Analytics</h3>
+            </div>
+            <div class="card-body">
+                <div class="management-stats">
+                    <div class="stat-item">
+                        <span class="stat-number">Multiple</span>
+                        <span class="stat-label">Report Types</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">Export</span>
+                        <span class="stat-label">CSV/PDF Available</span>
+                    </div>
+                </div>
+                <div class="management-actions">
+                    <a href="{{ url_for('reports') }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-chart-bar"></i> View Reports
+                    </a>
+                    {% if current_user.role == 'admin' %}
+                    <a href="{{ url_for('fee_reports') }}" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-money-bill"></i> Fee Reports
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Simple dashboard initialization
+document.addEventListener('DOMContentLoaded', function() {
+    // Real-time clock
+    function updateClock() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString();
+        const dateString = now.toLocaleDateString();
+        
+        // Update if clock element exists
+        const clockEl = document.getElementById('currentTime');
+        if (clockEl) {
+            clockEl.textContent = `${dateString} ${timeString}`;
+        }
+    }
+
+    setInterval(updateClock, 1000);
+    updateClock();
+    
+    // Fade in animation for stats cards
+    const statCards = document.querySelectorAll('.stat-card');
+    statCards.forEach((card, index) => {
+        setTimeout(() => {
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+});
+</script>
+
+<style>
+.stat-card {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.3s ease;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,201 @@
+{% extends 'base.html' %}
+
+{% block title %}Events - Student Management System{% endblock %}
+{% block page_title %}Events{% endblock %}
+
+{% block content %}
+<div class="content animate-fade-in-up">
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <h2 class="card-title">Events Calendar</h2>
+                <p class="text-secondary">
+                    {% if current_user.role in ['admin', 'teacher'] %}
+                    Manage university events and activities
+                    {% else %}
+                    View university events and activities
+                    {% endif %}
+                </p>
+            </div>
+            <div>
+                {% if current_user.role in ['admin', 'teacher'] %}
+                <a href="{{ url_for('add_event') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add Event
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card-body">
+            <!-- Upcoming Events Section -->
+            {% if upcoming_events %}
+            <div style="margin-bottom: 2rem;">
+                <h3 style="color: var(--primary-color); margin-bottom: 1rem;">
+                    <i class="fas fa-calendar-plus"></i> Upcoming Events
+                </h3>
+                <div style="display: grid; gap: 1rem;">
+                    {% for event in upcoming_events %}
+                    <div class="event-card upcoming">
+                        <div class="event-date">
+                            <div class="event-day">{{ event.event_date.strftime('%d') }}</div>
+                            <div class="event-month">{{ event.event_date.strftime('%b') }}</div>
+                        </div>
+                        <div class="event-details">
+                            <h4 class="event-title">{{ event.title }}</h4>
+                            <p class="event-description">{{ event.description }}</p>
+                            <div class="event-meta">
+                                <span><i class="fas fa-tag"></i> {{ event.event_type|title }}</span>
+                                <span><i class="fas fa-map-marker-alt"></i> {{ event.location or 'TBD' }}</span>
+                                <span><i class="fas fa-calendar"></i> {{ event.event_date.strftime('%Y-%m-%d') }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Past Events Section -->
+            {% if past_events %}
+            <div>
+                <h3 style="color: var(--gray-600); margin-bottom: 1rem;">
+                    <i class="fas fa-history"></i> Recent Past Events
+                </h3>
+                <div style="display: grid; gap: 1rem;">
+                    {% for event in past_events %}
+                    <div class="event-card past">
+                        <div class="event-date past-date">
+                            <div class="event-day">{{ event.event_date.strftime('%d') }}</div>
+                            <div class="event-month">{{ event.event_date.strftime('%b') }}</div>
+                        </div>
+                        <div class="event-details">
+                            <h4 class="event-title">{{ event.title }}</h4>
+                            <p class="event-description">{{ event.description }}</p>
+                            <div class="event-meta">
+                                <span><i class="fas fa-tag"></i> {{ event.event_type|title }}</span>
+                                <span><i class="fas fa-map-marker-alt"></i> {{ event.location or 'TBD' }}</span>
+                                <span><i class="fas fa-calendar"></i> {{ event.event_date.strftime('%Y-%m-%d') }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- No Events Message -->
+            {% if not upcoming_events and not past_events %}
+            <div style="text-align: center; padding: 3rem;">
+                <i class="fas fa-calendar-alt" style="font-size: 4rem; color: var(--gray-300); margin-bottom: 1rem;"></i>
+                <p style="color: var(--text-secondary); font-size: 1.125rem;">No events scheduled</p>
+                <p style="color: var(--text-tertiary); margin-bottom: 1.5rem;">
+                    {% if current_user.role in ['admin', 'teacher'] %}
+                    Add an event to get started
+                    {% else %}
+                    Check back later for upcoming events
+                    {% endif %}
+                </p>
+                {% if current_user.role in ['admin', 'teacher'] %}
+                <a href="{{ url_for('add_event') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add Event
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.event-card {
+    display: flex;
+    align-items: start;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    background: var(--gray-50);
+    border-radius: 12px;
+    border: 1px solid var(--gray-200);
+    transition: all 0.3s ease;
+}
+
+.event-card.upcoming {
+    border-left: 4px solid var(--primary-color);
+    background: rgba(0, 122, 255, 0.02);
+}
+
+.event-card.past {
+    opacity: 0.8;
+    background: var(--gray-25);
+}
+
+.event-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.event-date {
+    flex-shrink: 0;
+    width: 60px;
+    height: 60px;
+    background: var(--primary-color);
+    color: white;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.event-date.past-date {
+    background: var(--gray-400);
+}
+
+.event-day {
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.event-month {
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    font-weight: 500;
+}
+
+.event-details {
+    flex: 1;
+}
+
+.event-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+    color: var(--text-primary);
+}
+
+.event-description {
+    color: var(--text-secondary);
+    margin: 0 0 1rem 0;
+    line-height: 1.5;
+}
+
+.event-meta {
+    display: flex;
+    gap: 1.5rem;
+    font-size: 0.875rem;
+    color: var(--text-tertiary);
+}
+
+.event-meta span {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+}
+
+.event-meta i {
+    color: var(--primary-color);
+}
+</style>
+{% endblock %}

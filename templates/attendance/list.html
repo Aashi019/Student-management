@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+
+{% block title %}Attendance - Student Management System{% endblock %}
+{% block page_title %}Attendance{% endblock %}
+
+{% block content %}
+<div class="content animate-fade-in-up">
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <h2 class="card-title">Attendance Records</h2>
+                <p class="text-secondary">Track student attendance</p>
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <a href="{{ url_for('record_attendance') }}" class="btn btn-secondary">
+                    <i class="fas fa-plus"></i> Record Single
+                </a>
+                <a href="{{ url_for('bulk_attendance') }}" class="btn btn-primary">
+                    <i class="fas fa-clipboard-list"></i> Bulk Attendance
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div style="margin-bottom: 1.5rem;">
+                <form method="GET" style="display: flex; gap: 1rem; align-items: end;">
+                    <div class="form-group" style="margin: 0; flex: 1;">
+                        <label class="form-label">Select Date</label>
+                        <input type="date" name="date" class="form-control" value="{{ selected_date }}" onchange="this.form.submit()">
+                    </div>
+                </form>
+            </div>
+            
+            {% if attendance_records %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Student ID</th>
+                        <th>Student Name</th>
+                        <th>Status</th>
+                        <th>Period</th>
+                        <th>Recorded Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in attendance_records %}
+                    <tr>
+                        <td><strong>{{ record.student.student_id }}</strong></td>
+                        <td>{{ record.student.full_name }}</td>
+                        <td>
+                            {% if record.status == 'present' %}
+                                <span class="badge badge-success">Present</span>
+                            {% elif record.status == 'absent' %}
+                                <span class="badge badge-danger">Absent</span>
+                            {% elif record.status == 'late' %}
+                                <span class="badge badge-warning">Late</span>
+                            {% else %}
+                                <span class="badge badge-info">Excused</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="period-badge period-{{ record.period }}">
+                                {{ record.period|title }} Period
+                            </span>
+                        </td>
+                        <td>{{ record.created_at.strftime('%I:%M %p') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div style="text-align: center; padding: 3rem;">
+                <i class="fas fa-calendar-check" style="font-size: 4rem; color: var(--gray-300); margin-bottom: 1rem;"></i>
+                <p style="color: var(--text-secondary); font-size: 1.125rem;">No attendance records for this date</p>
+                <p style="color: var(--text-tertiary); margin-bottom: 1.5rem;">Start by recording attendance</p>
+                <a href="{{ url_for('bulk_attendance') }}" class="btn btn-primary">
+                    <i class="fas fa-clipboard-list"></i> Record Bulk Attendance
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.badge {
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    color: white;
+    font-size: 0.875rem;
+    font-weight: 500;
+    display: inline-block;
+}
+
+.badge-success {
+    background: #28a745;
+}
+
+.badge-danger {
+    background: #dc3545;
+}
+
+.badge-warning {
+    background: #ffc107;
+    color: #212529;
+}
+
+.badge-info {
+    background: #17a2b8;
+}
+
+.period-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    display: inline-block;
+}
+
+.period-morning {
+    background: rgba(52, 152, 219, 0.1);
+    color: #3498db;
+}
+
+.period-day {
+    background: rgba(230, 126, 34, 0.1);
+    color: #e67e22;
+}
+</style>
+{% endblock %}

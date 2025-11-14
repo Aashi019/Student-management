@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Portal - Dashboard{% endblock %}
+{% block page_title %}Welcome, {{ student.first_name }}!{% endblock %}
+
+{% block content %}
+<div class="student-portal animate-fade-in-up">
+    <!-- Student Info Card -->
+    <div class="student-info-card">
+        <div class="student-avatar">
+            {% if student.photo_filename %}
+                <img src="{{ url_for('static', filename='uploads/' + student.photo_filename) }}" alt="{{ student.full_name }}">
+            {% else %}
+                <div class="avatar-placeholder">
+                    <i class="fas fa-user-graduate"></i>
+                </div>
+            {% endif %}
+        </div>
+        <div class="student-details">
+            <h2>{{ student.full_name }}</h2>
+            <div class="student-meta">
+                <span><i class="fas fa-id-card"></i> {{ student.student_id }}</span>
+                <span><i class="fas fa-envelope"></i> {{ student.email }}</span>
+                <span><i class="fas fa-graduation-cap"></i> Grade {{ student.grade_level }}</span>
+            </div>
+        </div>
+        <div class="student-stats-mini">
+            <div class="stat-mini">
+                <div class="stat-mini-value">{{ "%.2f"|format(student.gpa) }}</div>
+                <div class="stat-mini-label">GPA</div>
+            </div>
+            <div class="stat-mini">
+                <div class="stat-mini-value">{{ attendance_rate }}%</div>
+                <div class="stat-mini-label">Attendance</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats Grid -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon courses">
+                <i class="fas fa-book-open"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">{{ enrollments|length }}</div>
+                <div class="stat-label">Enrolled Courses</div>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon grades">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">{{ recent_grades|length }}</div>
+                <div class="stat-label">Recent Grades</div>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon assignments">
+                <i class="fas fa-tasks"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">{{ recent_assignments|length }}</div>
+                <div class="stat-label">Assignments</div>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon attendance">
+                <i class="fas fa-calendar-check"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">{{ attendance_rate }}%</div>
+                <div class="stat-label">Attendance Rate</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="content-grid-2col">
+        <!-- Recent Grades -->
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fas fa-star"></i> Recent Grades</h3>
+                <a href="{{ url_for('student_grades') }}" class="btn btn-sm btn-outline">View All</a>
+            </div>
+            <div class="card-body">
+                {% if recent_grades %}
+                    <div class="grades-list">
+                        {% for grade in recent_grades %}
+                            <div class="grade-item">
+                                <div class="grade-info">
+                                    <div class="grade-subject">{{ grade.subject.name if grade.subject else 'N/A' }}</div>
+                                    <div class="grade-type">{{ grade.grade_type|capitalize }}</div>
+                                </div>
+                                <div class="grade-score">
+                                    <span class="grade-letter {{ 'excellent' if grade.letter_grade in ['A', 'A-'] else 'good' if grade.letter_grade in ['B+', 'B', 'B-'] else 'average' if grade.letter_grade in ['C+', 'C', 'C-'] else 'poor' }}">
+                                        {{ grade.letter_grade }}
+                                    </span>
+                                    <span class="grade-value">{{ grade.grade_value }}%</span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-clipboard-list"></i>
+                        <p>No grades recorded yet</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Recent Attendance -->
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fas fa-calendar-alt"></i> Recent Attendance</h3>
+                <a href="{{ url_for('student_attendance') }}" class="btn btn-sm btn-outline">View All</a>
+            </div>
+            <div class="card-body">
+                {% if recent_attendance %}
+                    <div class="attendance-list">
+                        {% for record in recent_attendance %}
+                            <div class="attendance-item">
+                                <div class="attendance-date">
+                                    <div class="date-day">{{ record.date.strftime('%d') }}</div>
+                                    <div class="date-month">{{ record.date.strftime('%b') }}</div>
+                                </div>
+                                <div class="attendance-status">
+                                    <span class="badge badge-{{ 'success' if record.status == 'present' else 'danger' if record.status == 'absent' else 'warning' }}">
+                                        {{ record.status|capitalize }}
+                                    </span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-calendar-times"></i>
+                        <p>No attendance records</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Enrolled Courses -->
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fas fa-book"></i> My Courses</h3>
+        </div>
+        <div class="card-body">
+            {% if enrollments %}
+                <div class="courses-grid">
+                    {% for enrollment in enrollments %}
+                        <div class="course-card">
+                            <div class="course-icon">
+                                <i class="fas fa-book-open"></i>
+                            </div>
+                            <div class="course-info">
+                                <h4>{{ enrollment.subject.name }}</h4>
+                                <p class="course-code">{{ enrollment.subject.code }}</p>
+                                <div class="course-meta">
+                                    <span><i class="fas fa-credit-card"></i> {{ enrollment.subject.credits }} Credits</span>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-book"></i>
+                    <p>Not enrolled in any courses</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,699 @@
+{% extends 'base.html' %}
+
+{% block title %}Students - Student Management System{% endblock %}
+{% block page_title %}Students{% endblock %}
+
+{% block header_actions %}
+    {% if current_user.role in ['admin', 'teacher'] %}
+    <a href="{{ url_for('add_student') }}" class="btn btn-primary">
+        <i class="fas fa-user-plus"></i>
+        Add Student
+    </a>
+    {% endif %}
+    <div class="dropdown">
+        <button class="btn btn-secondary dropdown-toggle" onclick="toggleDropdown('exportDropdown')">
+            <i class="fas fa-download"></i>
+            Export
+        </button>
+        <div class="dropdown-menu" id="exportDropdown">
+            <a href="#" class="dropdown-item" onclick="exportAll('csv'); return false;">
+                <i class="fas fa-file-csv"></i>
+                Export as CSV
+            </a>
+            <a href="#" class="dropdown-item" onclick="exportAll('excel'); return false;">
+                <i class="fas fa-file-excel"></i>
+                Export as Excel
+            </a>
+            <a href="#" class="dropdown-item" onclick="exportAll('pdf'); return false;">
+                <i class="fas fa-file-pdf"></i>
+                Export as PDF
+            </a>
+        </div>
+    </div>
+{% endblock %}
+
+{% block content %}
+<div class="content animate-fade-in-up">
+    
+    <!-- Search and Filters Card -->
+    <div class="card" style="margin-bottom: 1.5rem;">
+        <div class="card-body">
+            <form method="GET" style="display: flex; gap: 1rem; align-items: end; flex-wrap: wrap;">
+                <div class="form-group" style="flex: 1; min-width: 300px; margin-bottom: 0;">
+                    <label class="form-label">Search</label>
+                    <input type="text" name="search" class="form-control" 
+                           placeholder="Search by name, email, or ID..." 
+                           value="{{ search }}">
+                </div>
+                
+                <div class="form-group" style="min-width: 150px; margin-bottom: 0;">
+                    <label class="form-label">Year Level</label>
+                    <select name="grade" class="form-control">
+                        <option value="">All Years</option>
+                        {% for grade in grade_levels %}
+                            <option value="{{ grade }}" {% if grade == grade_filter %}selected{% endif %}>
+                                {{ grade }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group" style="min-width: 150px; margin-bottom: 0;">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-control">
+                        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                        <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+                        <option value="graduated" {% if status_filter == 'graduated' %}selected{% endif %}>Graduated</option>
+                        <option value="transferred" {% if status_filter == 'transferred' %}selected{% endif %}>Transferred</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search"></i>
+                    Search
+                </button>
+                
+                <a href="{{ url_for('students') }}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i>
+                    Clear
+                </a>
+            </form>
+        </div>
+    </div>
+        
+    <!-- Students Table Card -->
+    <div class="card">
+        <div class="card-body" style="padding: 0;">
+            <div style="overflow-x: auto;">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;">
+                                <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)">
+                            </th>
+                            <th style="width: 50px;">Photo</th>
+                            <th>Student ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Year</th>
+                            <th>GPA</th>
+                            <th>Status</th>
+                            <th style="width: 150px; text-align: center;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if students %}
+                            {% for student in students %}
+                            <tr>
+                                <td>
+                                    <input type="checkbox" class="student-checkbox" value="{{ student.id }}" onchange="updateBulkActions()">
+                                </td>
+                                <td>
+                                    <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.875rem;">
+                                        {{ student.first_name[0] }}{{ student.last_name[0] }}
+                                    </div>
+                                </td>
+                                <td>
+                                    <span style="font-family: monospace; color: var(--text-secondary); font-weight: 500;">{{ student.student_id }}</span>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('student_detail', id=student.id) }}" style="color: var(--primary-color); text-decoration: none; font-weight: 500;">
+                                        {{ student.full_name }}
+                                    </a>
+                                </td>
+                                <td style="color: var(--text-tertiary); font-size: 0.875rem;">{{ student.email }}</td>
+                                <td>
+                                    <span class="badge badge-info">{{ student.grade_level }}</span>
+                                </td>
+                                <td>
+                                    <span class="gpa-value gpa-{% if student.gpa >= 3.5 %}high{% elif student.gpa >= 2.5 %}medium{% else %}low{% endif %}">
+                                        {{ "%.2f"|format(student.gpa) }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge badge-{% if student.status == 'active' %}success{% elif student.status == 'graduated' %}info{% else %}warning{% endif %}">
+                                        {{ student.status.title() }}
+                                    </span>
+                                </td>
+                                <td style="text-align: center;">
+                                    <div style="display: flex; gap: 0.5rem; justify-content: center;">
+                                        <a href="{{ url_for('student_detail', id=student.id) }}" 
+                                           class="btn btn-sm btn-ghost" title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if current_user.role == 'admin' %}
+                                        <a href="{{ url_for('edit_student', id=student.id) }}" 
+                                           class="btn btn-sm btn-ghost" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="9" style="text-align: center; padding: 3rem;">
+                                    <div style="color: var(--text-tertiary);">
+                                        <i class="fas fa-user-graduate" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                                        <h3 style="margin-bottom: 0.5rem;">No Students Found</h3>
+                                        <p>{% if search or grade_filter %}Try adjusting your search or filters{% elif current_user.role == 'teacher' %}No students assigned to you.{% else %}Start by adding your first student{% endif %}</p>
+                                        {% if not search and not grade_filter and current_user.role == 'admin' %}
+                                            <a href="{{ url_for('add_student') }}" class="btn btn-primary" style="margin-top: 1rem;">
+                                                <i class="fas fa-user-plus"></i>
+                                                Add First Student
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Bulk Actions Bar -->
+        <div class="bulk-actions" id="bulkActions" style="display: none;">
+            <div class="bulk-actions-content">
+                <div class="selected-count">0 students selected</div>
+                <div class="bulk-buttons">
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-secondary dropdown-toggle" onclick="toggleDropdown('bulkExportDropdown')">
+                            <i class="fas fa-download"></i>
+                            Export Selected
+                        </button>
+                        <div class="dropdown-menu" id="bulkExportDropdown">
+                            <a href="#" class="dropdown-item" onclick="exportSelected('csv'); return false;">
+                                <i class="fas fa-file-csv"></i>
+                                Export as CSV
+                            </a>
+                            <a href="#" class="dropdown-item" onclick="exportSelected('excel'); return false;">
+                                <i class="fas fa-file-excel"></i>
+                                Export as Excel
+                            </a>
+                            <a href="#" class="dropdown-item" onclick="exportSelected('pdf'); return false;">
+                                <i class="fas fa-file-pdf"></i>
+                                Export as PDF
+                            </a>
+                        </div>
+                    </div>
+                    {% if current_user.role == 'admin' %}
+                    <button class="btn btn-sm btn-warning" onclick="bulkEdit()">
+                        <i class="fas fa-edit"></i>
+                        Bulk Edit
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Pagination -->
+        {% if pagination.pages > 1 %}
+        <div class="card-footer" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; border-top: 1px solid var(--border-color);">
+            <div style="color: var(--text-tertiary); font-size: 0.875rem;">
+                Showing {{ ((pagination.page - 1) * pagination.per_page) + 1 }} to {{ [pagination.page * pagination.per_page, pagination.total]|min }} of {{ pagination.total }} students
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+                {% if pagination.has_prev %}
+                    <a href="{{ url_for('students', page=pagination.prev_num, search=search, grade=grade_filter, status=status_filter) }}" 
+                       class="btn btn-sm btn-secondary">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                {% else %}
+                    <button class="btn btn-sm btn-secondary" disabled>
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                {% endif %}
+                
+                <span style="display: flex; align-items: center; color: var(--text-secondary); font-size: 0.875rem; padding: 0 1rem;">
+                    Page {{ pagination.page }} of {{ pagination.pages }}
+                </span>
+                
+                {% if pagination.has_next %}
+                    <a href="{{ url_for('students', page=pagination.next_num, search=search, grade=grade_filter, status=status_filter) }}" 
+                       class="btn btn-sm btn-secondary">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                {% else %}
+                    <button class="btn btn-sm btn-secondary" disabled>
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">Confirm Deletion</h3>
+            <button class="modal-close" onclick="closeModal('deleteModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <p>Are you sure you want to deactivate <strong id="studentName"></strong>?</p>
+            <p class="text-muted">This action will mark the student as inactive but preserve all their data.</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('deleteModal')">Cancel</button>
+            <form method="POST" id="deleteForm" style="display: inline;">
+                <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-trash"></i>
+                    Deactivate Student
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let searchTimeout;
+
+// Debounced search
+function debounceSearch(value) {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        const url = new URL(window.location);
+        url.searchParams.set('search', value);
+        url.searchParams.set('page', '1');
+        window.location.href = url.toString();
+    }, 500);
+}
+
+// Clear all filters
+function clearFilters() {
+    const url = new URL(window.location);
+    url.search = '';
+    window.location.href = url.toString();
+}
+
+// Toggle dropdown
+function toggleDropdown(id) {
+    // Close all other dropdowns first
+    document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+        if (menu.id !== id) {
+            menu.classList.remove('show');
+        }
+    });
+    
+    const dropdown = document.getElementById(id);
+    dropdown.classList.toggle('show');
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.dropdown')) {
+        document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+            menu.classList.remove('show');
+        });
+    }
+});
+
+// Prevent dropdown from closing when clicking inside
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.dropdown-menu')) {
+        e.stopPropagation();
+    }
+});
+
+// Select all functionality
+function toggleSelectAll(checkbox) {
+    const studentCheckboxes = document.querySelectorAll('.student-checkbox');
+    studentCheckboxes.forEach(cb => {
+        cb.checked = checkbox.checked;
+    });
+    updateBulkActions();
+}
+
+// Update bulk actions visibility
+function updateBulkActions() {
+    const selectedCheckboxes = document.querySelectorAll('.student-checkbox:checked');
+    const bulkActions = document.getElementById('bulkActions');
+    const selectedCount = bulkActions.querySelector('.selected-count');
+    
+    if (selectedCheckboxes.length > 0) {
+        bulkActions.style.display = 'block';
+        selectedCount.textContent = `${selectedCheckboxes.length} student${selectedCheckboxes.length > 1 ? 's' : ''} selected`;
+    } else {
+        bulkActions.style.display = 'none';
+    }
+}
+
+// Add event listeners to checkboxes
+document.addEventListener('DOMContentLoaded', function() {
+    const studentCheckboxes = document.querySelectorAll('.student-checkbox');
+    studentCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateBulkActions);
+    });
+});
+
+// Delete confirmation
+function confirmDelete(studentId, studentName) {
+    document.getElementById('studentName').textContent = studentName;
+    document.getElementById('deleteForm').action = `/students/${studentId}/delete`;
+    document.getElementById('deleteModal').classList.add('active');
+}
+
+// Close modal
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.remove('active');
+}
+
+// Bulk operations
+function bulkEdit() {
+    const selected = Array.from(document.querySelectorAll('.student-checkbox:checked')).map(cb => cb.value);
+    if (selected.length === 0) return;
+    
+    // Implement bulk edit functionality
+    alert('Bulk edit functionality coming soon!');
+}
+
+function bulkDelete() {
+    const selected = Array.from(document.querySelectorAll('.student-checkbox:checked')).map(cb => cb.value);
+    if (selected.length === 0) return;
+    
+    if (confirm(`Are you sure you want to deactivate ${selected.length} student${selected.length > 1 ? 's' : ''}?`)) {
+        // Implement bulk delete functionality
+        alert('Bulk delete functionality coming soon!');
+    }
+}
+
+function exportSelected(format) {
+    const selected = Array.from(document.querySelectorAll('.student-checkbox:checked')).map(cb => cb.value);
+    if (selected.length === 0) {
+        alert('Please select at least one student to export.');
+        return;
+    }
+    
+    // Get current search parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams();
+    
+    // Add selected student IDs
+    selected.forEach(id => params.append('student_ids', id));
+    
+    // Add format
+    params.set('format', format);
+    
+    // Preserve search filters
+    if (urlParams.get('search')) params.set('search', urlParams.get('search'));
+    if (urlParams.get('grade')) params.set('grade', urlParams.get('grade'));
+    if (urlParams.get('status')) params.set('status', urlParams.get('status'));
+    
+    // Open export URL
+    window.open(`{{ url_for('export_students') }}?${params.toString()}`, '_blank');
+}
+
+// Enhanced export all function
+function exportAll(format) {
+    // Get current search parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams();
+    
+    // Add format
+    params.set('format', format);
+    
+    // Preserve search filters for export
+    if (urlParams.get('search')) params.set('search', urlParams.get('search'));
+    if (urlParams.get('grade')) params.set('grade', urlParams.get('grade'));
+    if (urlParams.get('status')) params.set('status', urlParams.get('status'));
+    
+    // Open export URL
+    window.open(`{{ url_for('export_students') }}?${params.toString()}`, '_blank');
+}
+
+// Close modal on escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const activeModal = document.querySelector('.modal-overlay.active');
+        if (activeModal) {
+            activeModal.classList.remove('active');
+        }
+    }
+});
+</script>
+
+<style>
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.page-header-left h2 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.page-subtitle {
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.page-header-right {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.dropdown {
+    position: relative;
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-light);
+    border-radius: 0.5rem;
+    box-shadow: var(--shadow-lg);
+    min-width: 180px;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: var(--transition);
+}
+
+.dropdown-menu.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    color: var(--text-primary);
+    text-decoration: none;
+    border-bottom: 1px solid var(--border-light);
+    transition: var(--transition);
+}
+
+.dropdown-item:hover {
+    background: var(--bg-tertiary);
+}
+
+.dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.search-input-group {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+}
+
+.search-form {
+    margin-bottom: 1rem;
+}
+
+.filters-form {
+    display: flex;
+    gap: 1rem;
+    align-items: end;
+    flex-wrap: wrap;
+}
+
+.student-avatar {
+    width: 40px;
+    height: 40px;
+    position: relative;
+}
+
+.avatar-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: var(--primary-color);
+    color: var(--text-white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.student-id {
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.student-name {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 600;
+    transition: var(--transition);
+}
+
+.student-name:hover {
+    color: var(--primary-dark);
+    text-decoration: underline;
+}
+
+.student-email {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.875rem;
+}
+
+.student-email:hover {
+    color: var(--primary-color);
+}
+
+.gpa-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-weight: 600;
+    font-size: 0.75rem;
+}
+
+.gpa-badge.high {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success-color);
+}
+
+.gpa-badge.medium {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--warning-color);
+}
+
+.gpa-badge.low {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger-color);
+}
+
+.gpa-value {
+    font-weight: 600;
+    font-size: 0.9375rem;
+}
+
+.gpa-value.gpa-high {
+    color: var(--success-color);
+}
+
+.gpa-value.gpa-medium {
+    color: var(--warning-color);
+}
+
+.gpa-value.gpa-low {
+    color: var(--danger-color);
+}
+
+.action-buttons {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.no-data {
+    text-align: center;
+    padding: 4rem 2rem;
+}
+
+.no-data-content i {
+    font-size: 4rem;
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+}
+
+.no-data-content h3 {
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.no-data-content p {
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+}
+
+.bulk-actions {
+    background: var(--bg-tertiary);
+    border-top: 1px solid var(--border-light);
+    padding: 1rem 1.5rem;
+}
+
+.bulk-actions-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.selected-count {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.bulk-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+@media (max-width: 768px) {
+    .page-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+    
+    .page-header-right {
+        justify-content: stretch;
+    }
+    
+    .filters-form {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+    
+    .bulk-actions-content {
+        flex-direction: column;
+        gap: 1rem;
+    }
+}
+</style>
+{% endblock %}

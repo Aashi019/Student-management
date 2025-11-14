@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+
+{% block title %}My Grades - Student Portal{% endblock %}
+{% block page_title %}My Grades{% endblock %}
+
+{% block content %}
+<div class="student-portal animate-fade-in-up">
+    {% if not student %}
+    <div class="search-section">
+        <div class="card">
+            <div class="card-header">
+                <h4><i class="fas fa-search"></i> Find Your Grades</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('student_search_grades') }}">
+                    <div class="form-group">
+                        <label for="search_term">Enter Your Name or Student ID:</label>
+                        <input type="text" class="form-control" id="search_term" name="search_term" 
+                               placeholder="e.g., John Doe or 12345" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Search My Grades
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="page-header-actions">
+        <div>
+            <h2><i class="fas fa-chart-line"></i> Academic Performance for {{ student.full_name }}</h2>
+            <p>Student ID: {{ student.student_id }}</p>
+        </div>
+        {% if student.gpa %}
+        <div class="gpa-display">
+            <div class="gpa-label">Current GPA</div>
+            <div class="gpa-value">{{ "%.2f"|format(student.gpa) }}</div>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if grades %}
+        <div class="grades-list">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-graduation-cap"></i> Your Grades</h4>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Subject</th>
+                                    <th>Assessment Type</th>
+                                    <th>Score</th>
+                                    <th>Max Score</th>
+                                    <th>Percentage</th>
+                                    <th>Grade</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for grade in grades %}
+                                <tr>
+                                    <td>{{ grade.subject.name }}</td>
+                                    <td>
+                                        <span class="badge badge-info">{{ grade.assessment_type }}</span>
+                                    </td>
+                                    <td>{{ grade.score }}</td>
+                                    <td>{{ grade.max_score }}</td>
+                                    <td>
+                                        {% set percentage = (grade.score / grade.max_score * 100) if grade.max_score > 0 else 0 %}
+                                        <span class="percentage {% if percentage >= 90 %}text-success{% elif percentage >= 80 %}text-warning{% else %}text-danger{% endif %}">
+                                            {{ "%.1f"|format(percentage) }}%
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if grade.grade in ['A', 'A+'] %}badge-success{% elif grade.grade in ['B', 'B+'] %}badge-warning{% else %}badge-danger{% endif %}">
+                                            {{ grade.grade }}
+                                        </span>
+                                    </td>
+                                    <td>{{ grade.created_at.strftime('%Y-%m-%d') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center mt-3">
+            <a href="{{ url_for('student_my_grades') }}" class="btn btn-secondary">
+                <i class="fas fa-search"></i> Search Another Student
+            </a>
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> No grades found for {{ student.full_name }}.
+        </div>
+        
+        <div class="text-center">
+            <a href="{{ url_for('student_my_grades') }}" class="btn btn-secondary">
+                <i class="fas fa-search"></i> Search Another Student
+            </a>
+        </div>
+    {% endif %}
+    {% endif %}
+</div>
+
+<style>
+.search-section {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.gpa-display {
+    text-align: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 10px;
+    min-width: 120px;
+}
+
+.gpa-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.gpa-value {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-top: 5px;
+}
+
+.percentage {
+    font-weight: bold;
+}
+
+.table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.badge {
+    font-size: 0.85rem;
+}
+</style>
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-book"></i> {{ subject_name }}</h3>
+                    <div class="subject-stats">
+                        {% set avg = (grades | sum(attribute='grade_value')) / (grades | length) %}
+                        <span class="avg-grade">Average: {{ "%.1f"|format(avg) }}%</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="grades-table-wrapper">
+                        <table class="grades-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Score</th>
+                                    <th>Grade</th>
+                                    <th>Semester</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for grade in grades %}
+                                    <tr>
+                                        <td>{{ grade.date_recorded.strftime('%b %d, %Y') }}</td>
+                                        <td>
+                                            <span class="grade-type-badge {{ grade.grade_type }}">
+                                                {{ grade.grade_type|capitalize }}
+                                            </span>
+                                        </td>
+                                        <td>{{ grade.grade_value }}%</td>
+                                        <td>
+                                            <span class="grade-letter {{ 'excellent' if grade.letter_grade in ['A', 'A-'] else 'good' if grade.letter_grade in ['B+', 'B', 'B-'] else 'average' if grade.letter_grade in ['C+', 'C', 'C-'] else 'poor' }}">
+                                                {{ grade.letter_grade }}
+                                            </span>
+                                        </td>
+                                        <td>{{ grade.semester|capitalize }} {{ grade.academic_year }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="card">
+            <div class="card-body">
+                <div class="empty-state-large">
+                    <i class="fas fa-clipboard-list"></i>
+                    <h3>No Grades Yet</h3>
+                    <p>Your grades will appear here once they are recorded by your teachers.</p>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

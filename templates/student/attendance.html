@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+
+{% block title %}My Attendance - Student Portal{% endblock %}
+{% block page_title %}My Attendance{% endblock %}
+
+{% block content %}
+<div class="student-portal animate-fade-in-up">
+    {% if not student %}
+    <div class="search-section">
+        <div class="card">
+            <div class="card-header">
+                <h4><i class="fas fa-search"></i> Find Your Attendance</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('student_search_attendance') }}">
+                    <div class="form-group">
+                        <label for="search_term">Enter Your Name or Student ID:</label>
+                        <input type="text" class="form-control" id="search_term" name="search_term" 
+                               placeholder="e.g., Aashika KC or STU000001" required>
+                        <small class="form-text text-muted">
+                            Available Student IDs: STU000001 to STU000010
+                        </small>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Search My Attendance
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    
+    <!-- Student Info Header -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h4 class="mb-1">{{ student.first_name }} {{ student.last_name }}</h4>
+                    <p class="text-muted mb-0">Student ID: {{ student.student_id }}</p>
+                    {% set enrollment = student.enrollments.first() %}
+                    <p class="text-muted mb-0">Faculty: {{ enrollment.subject.name if enrollment and enrollment.subject else 'Not Assigned' }}</p>
+                </div>
+                <div class="col-md-4 text-right">
+                    <a href="{{ url_for('student_my_attendance') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-search"></i> Search Again
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Summary -->
+    {% if attendance %}
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-primary">{{ total_days }}</h3>
+                    <p class="text-muted mb-0">Total Days</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-success">{{ present_days }}</h3>
+                    <p class="text-muted mb-0">Present</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-danger">{{ total_days - present_days }}</h3>
+                    <p class="text-muted mb-0">Absent</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="{% if attendance_percentage >= 75 %}text-success{% elif attendance_percentage >= 50 %}text-warning{% else %}text-danger{% endif %}">
+                        {{ "%.1f"|format(attendance_percentage) }}%
+                    </h3>
+                    <p class="text-muted mb-0">Attendance</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Details -->
+    <div class="card">
+        <div class="card-header">
+            <h5><i class="fas fa-calendar-check"></i> Recent Attendance (Last 10 Days)</h5>
+        </div>
+        <div class="card-body">
+            {% if attendance_percentage < 75 %}
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle"></i>
+                <strong>Warning:</strong> Your attendance is below 75%. Please attend classes regularly.
+            </div>
+            {% endif %}
+            
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Period</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in attendance %}
+                        <tr class="{% if record.status == 'present' %}table-success{% elif record.status == 'absent' %}table-danger{% else %}table-warning{% endif %}">
+                            <td>{{ record.date.strftime('%B %d, %Y') if record.date else 'N/A' }}</td>
+                            <td>{{ record.period|capitalize if record.period else 'General' }}</td>
+                            <td>
+                                {% if record.status == 'present' %}
+                                    <span class="badge badge-success"><i class="fas fa-check"></i> Present</span>
+                                {% elif record.status == 'absent' %}
+                                    <span class="badge badge-danger"><i class="fas fa-times"></i> Absent</span>
+                                {% else %}
+                                    <span class="badge badge-warning"><i class="fas fa-clock"></i> {{ record.status|capitalize }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="card">
+        <div class="card-body">
+            <div class="empty-state-large">
+                <i class="fas fa-calendar-times"></i>
+                <h3>No Attendance Records</h3>
+                <p>No attendance records found for {{ student.first_name }} {{ student.last_name }}.</p>
+                <a href="{{ url_for('student_my_attendance') }}" class="btn btn-primary">
+                    <i class="fas fa-search"></i> Search Again
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,8 @@
+id,title,description,event_date,event_time,event_type,location,status,created_at
+4,Student Orientation,Orientation program for new students,2025-10-05,17:46,orientation,Auditorium,past,2025-11-04 12:01:00
+5,Technology Workshop,Workshop on latest programming technologies,2025-10-20,17:46,workshop,Lab 2,past,2025-11-04 12:01:00
+3,Faculty Meeting,Monthly faculty coordination meeting,2025-11-07,17:46,meeting,Conference Room,upcoming,2025-11-04 12:01:00
+1,BSC-CSIT Final Examinations,Final semester examinations for BSC-CSIT students,2025-11-11,17:46,examination,Main Hall,upcoming,2025-11-04 12:01:00
+2,BCA Project Presentations,Final year project presentations for BCA students,2025-11-18,17:46,academic,Computer Lab,upcoming,2025-11-04 12:01:00
+9,ideax,hackathon,2025-11-20,09:11,other,mbmc,upcoming,2025-11-04 12:26:37
+6,Test Event - Mid-term Exams,Mid-term examinations for all BSC-CSIT and BCA students,2025-11-25,17:53,examination,Examination Hall,upcoming,2025-11-04 12:08:05

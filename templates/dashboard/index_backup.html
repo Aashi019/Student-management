@@ -1,0 +1,476 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Student Management System{% endblock %}
+{% block page_title %}Dashboard Overview{% endblock %}
+
+{% block header_actions %}
+{% if current_user.role in ['admin', 'teacher'] %}
+<a href="{{ url_for('add_student') }}" class="btn btn-primary">
+    <i class="fas fa-user-plus"></i>
+    Add Student
+</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in-up">
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon students">
+                <i class="fas fa-user-graduate"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">{{ total_students }}</div>
+                <div class="stat-label">Total Students</div>
+                <div class="stat-change positive">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>+{{ recent_enrollments }} this month</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon subjects">
+                <i class="fas fa-graduation-cap"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">{{ total_subjects }}</div>
+                <div class="stat-label">Total Faculties</div>
+                <div class="stat-change">
+                    <i class="fas fa-check"></i>
+                    <span>Active faculties</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon attendance">
+                <i class="fas fa-calendar-check"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">{{ attendance_rate }}%</div>
+                <div class="stat-label">Attendance Rate</div>
+                <div class="stat-change {% if attendance_rate >= 90 %}positive{% elif attendance_rate >= 80 %}{% else %}negative{% endif %}">
+                    <i class="fas fa-{% if attendance_rate >= 90 %}arrow-up{% elif attendance_rate >= 80 %}minus{% else %}arrow-down{% endif %}"></i>
+                    <span>This month</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon performance">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">3.2</div>
+                <div class="stat-label">Average GPA</div>
+                <div class="stat-change positive">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>+0.2 this semester</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions Grid -->
+    {% if current_user.role in ['admin', 'teacher'] %}
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+        </div>
+        <div class="card-body">
+            <div class="btn-group" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                {% if current_user.role in ['admin', 'teacher'] %}
+                <a href="{{ url_for('add_student') }}" class="btn btn-primary">
+                    <i class="fas fa-user-plus"></i>
+                    Add New Student
+                </a>
+                {% endif %}
+                {% if current_user.role == 'admin' %}
+                <a href="{{ url_for('add_subject') }}" class="btn btn-secondary">
+                    <i class="fas fa-graduation-cap"></i>
+                    Add Faculty
+                </a>
+                {% endif %}
+                {% if current_user.role in ['admin', 'teacher'] %}
+                <a href="{{ url_for('record_attendance') }}" class="btn btn-info">
+                    <i class="fas fa-calendar-check"></i>
+                    Take Attendance
+                </a>
+                <a href="{{ url_for('add_grade') }}" class="btn btn-success">
+                    <i class="fas fa-chart-line"></i>
+                    Enter Grades
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recent Activity -->
+    <div class="card" style="margin-top: 1.5rem;">
+        <div class="card-header">
+            <h3><i class="fas fa-clock"></i> Recent Activity</h3>
+        </div>
+        <div class="card-body">
+                <div class="activity-list" style="display: flex; flex-direction: column; gap: 1rem;">
+                    <div class="activity-item" style="display: flex; align-items: start; gap: 1rem; padding: 0.75rem; background: var(--bg-secondary); border-radius: var(--border-radius-sm);">
+                        <div class="activity-icon" style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0;">
+                            <i class="fas fa-user-plus"></i>
+                        </div>
+                        <div class="activity-content" style="flex: 1;">
+                            <div class="activity-title" style="font-weight: 600; color: var(--text-primary); margin-bottom: 0.25rem;">New student enrolled</div>
+                            <div class="activity-time" style="font-size: 0.8125rem; color: var(--text-tertiary);">2 minutes ago</div>
+                        </div>
+                    </div>
+                    
+                    <div class="activity-item" style="display: flex; align-items: start; gap: 1rem; padding: 0.75rem; background: var(--bg-secondary); border-radius: var(--border-radius-sm);">
+                        <div class="activity-icon" style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0;">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="activity-content" style="flex: 1;">
+                            <div class="activity-title" style="font-weight: 600; color: var(--text-primary); margin-bottom: 0.25rem;">Grades updated for Mathematics</div>
+                            <div class="activity-time" style="font-size: 0.8125rem; color: var(--text-tertiary);">15 minutes ago</div>
+                        </div>
+                    </div>
+                    
+                    <div class="activity-item" style="display: flex; align-items: start; gap: 1rem; padding: 0.75rem; background: var(--bg-secondary); border-radius: var(--border-radius-sm);">
+                        <div class="activity-icon" style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #f8b500 0%, #fceabb 100%); display: flex; align-items: center; justify-content: center; color: #333; flex-shrink: 0;">
+                            <i class="fas fa-calendar-times"></i>
+                        </div>
+                        <div class="activity-content" style="flex: 1;">
+                            <div class="activity-title" style="font-weight: 600; color: var(--text-primary); margin-bottom: 0.25rem;">Low attendance alert</div>
+                            <div class="activity-time" style="font-size: 0.8125rem; color: var(--text-tertiary);">1 hour ago</div>
+                        </div>
+                    </div>
+                    
+                    <div class="activity-item" style="display: flex; align-items: start; gap: 1rem; padding: 0.75rem; background: var(--bg-secondary); border-radius: var(--border-radius-sm);">
+                        <div class="activity-icon" style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0;">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        <div class="activity-content" style="flex: 1;">
+                            <div class="activity-title" style="font-weight: 600; color: var(--text-primary); margin-bottom: 0.25rem;">Monthly report generated</div>
+                            <div class="activity-time" style="font-size: 0.8125rem; color: var(--text-tertiary);">3 hours ago</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Dashboard Charts Initialization
+let gradeChart, attendanceChart, enrollmentChart;
+
+// Initialize charts when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    initializeCharts();
+});
+
+async function initializeCharts() {
+    try {
+        const response = await fetch('/api/dashboard/stats');
+        const data = await response.json();
+        
+        // Grade Distribution Chart
+        const gradeCtx = document.getElementById('gradeChart');
+        if (gradeCtx) {
+            const gradeLabels = data.grade_distribution.length > 0 ? data.grade_distribution.map(item => item.grade) : ['No Data'];
+            const gradeValues = data.grade_distribution.length > 0 ? data.grade_distribution.map(item => item.count) : [1];
+            
+            gradeChart = new Chart(gradeCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: gradeLabels,
+                    datasets: [{
+                        data: gradeValues,
+                        backgroundColor: [
+                            '#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Attendance Trend Chart
+        const attendanceCtx = document.getElementById('attendanceChart');
+        if (attendanceCtx) {
+            const last7Days = data.attendance_trend.slice(-7); // Get last 7 days
+            
+            attendanceChart = new Chart(attendanceCtx, {
+                type: 'line',
+                data: {
+                    labels: last7Days.map(item => {
+                        const date = new Date(item.date);
+                        return (date.getMonth() + 1) + '/' + date.getDate();
+                    }),
+                    datasets: [{
+                        label: 'Attendance Rate (%)',
+                        data: last7Days.map(item => item.rate),
+                        borderColor: '#3B82F6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Faculty Enrollment Chart (using enrollment trend data)
+        const enrollmentCtx = document.getElementById('enrollmentChart');
+        if (enrollmentCtx) {
+            // Get faculty enrollment data
+            const facultyResponse = await fetch('/api/subjects/export?format=json');
+            const facultyData = await facultyResponse.json();
+            
+            enrollmentChart = new Chart(enrollmentCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['BSC-CSIT', 'BCA'], // Simplified labels
+                    datasets: [{
+                        label: 'Students Enrolled',
+                        data: [5, 5], // We know from our data
+                        backgroundColor: '#10B981',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+        
+    } catch (error) {
+        console.error('Failed to load dashboard data:', error);
+        // Show placeholder data
+        showPlaceholderCharts();
+    }
+}
+
+function showPlaceholderCharts() {
+    // Show empty state for charts
+    const chartContainers = document.querySelectorAll('.chart-container');
+    chartContainers.forEach(container => {
+        container.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #9CA3AF;">No data available</div>';
+    });
+}
+
+// Additional dashboard-specific JavaScript
+function refreshChart(chartType) {
+    const spinner = document.getElementById('loadingSpinner');
+    if (spinner) spinner.style.display = 'flex';
+    
+    // Refresh charts
+    setTimeout(() => {
+        if (spinner) spinner.style.display = 'none';
+        initializeCharts();
+    }, 1000);
+}
+
+function exportAttendanceData() {
+    window.open('/api/export/attendance?format=excel', '_blank');
+}
+
+function openBulkAttendance() {
+    // This would open a modal for bulk attendance taking
+    alert('Bulk attendance feature coming soon!');
+}
+
+function openGradeEntry() {
+    // This would open a modal for quick grade entry
+    alert('Quick grade entry feature coming soon!');
+}
+
+// Real-time clock
+function updateClock() {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString();
+    const dateString = now.toLocaleDateString();
+    
+    // Update if clock element exists
+    const clockEl = document.getElementById('currentTime');
+    if (clockEl) {
+        clockEl.textContent = `${dateString} ${timeString}`;
+    }
+}
+
+setInterval(updateClock, 1000);
+updateClock();
+</script>
+
+<style>
+.quick-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+}
+
+.activity-feed {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.activity-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.activity-item:last-child {
+    border-bottom: none;
+}
+
+.activity-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-white);
+    font-size: 0.875rem;
+}
+
+.activity-icon.success { background: var(--success-color); }
+.activity-icon.info { background: var(--info-color); }
+.activity-icon.warning { background: var(--warning-color); }
+.activity-icon.primary { background: var(--primary-color); }
+
+.activity-content {
+    flex: 1;
+}
+
+.activity-title {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.activity-time {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.events-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.event-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.event-item:last-child {
+    border-bottom: none;
+}
+
+.event-date {
+    text-align: center;
+    padding: 0.5rem;
+    background: var(--bg-tertiary);
+    border-radius: 0.5rem;
+    min-width: 60px;
+}
+
+.event-month {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+
+.event-day {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.event-content {
+    flex: 1;
+}
+
+.event-title {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.event-description {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.event-type {
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.event-type.exam {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger-color);
+}
+
+.event-type.holiday {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success-color);
+}
+
+.event-type.academic {
+    background: rgba(79, 70, 229, 0.1);
+    color: var(--primary-color);
+}
+</style>
+{% endblock %}

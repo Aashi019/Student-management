@@ -1,0 +1,254 @@
+{% extends 'base.html' %}
+
+{% block title %}Record Payment{% endblock %}
+{% block page_title %}Record Payment{% endblock %}
+
+{% block content %}
+<div class="content animate-fade-in-up">
+    <div style="max-width: 800px; margin: 0 auto;">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Record Fee Payment</h2>
+                <p style="margin: 0.5rem 0 0 0; color: var(--text-secondary);">
+                    Record a new fee payment made by a student
+                </p>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                        <div class="form-group">
+                            <label class="form-label" for="student_id">Student *</label>
+                            <select id="student_id" name="student_id" class="form-control" required onchange="updateStudentInfo()">
+                                <option value="">Select student...</option>
+                                {% for student in students %}
+                                <option value="{{ student.id }}" data-email="{{ student.email }}" data-grade="{{ student.grade_level }}">
+                                    {{ student.first_name }} {{ student.last_name }} ({{ student.student_id }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="fee_structure_id">Fee Type *</label>
+                            <select id="fee_structure_id" name="fee_structure_id" class="form-control" required onchange="updateFeeInfo()">
+                                <option value="">Select fee type...</option>
+                                {% for fee_structure in fee_structures %}
+                                <option value="{{ fee_structure.id }}" 
+                                        data-amount="{{ fee_structure.amount }}" 
+                                        data-name="{{ fee_structure.name }}"
+                                        data-semester="{{ fee_structure.semester }}"
+                                        data-faculty="{{ fee_structure.faculty.name if fee_structure.faculty else 'All' }}">
+                                    {{ fee_structure.name }} - {{ fee_structure.semester or 'N/A' }} 
+                                    (₨{{ "{:,.0f}".format(fee_structure.amount) }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Student Info Display -->
+                    <div id="studentInfo" class="info-box" style="display: none; margin-bottom: 1.5rem;">
+                        <h4 style="margin: 0 0 0.5rem 0; color: var(--primary-color);">Student Information</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.875rem;">
+                            <div><strong>Email:</strong> <span id="studentEmail">-</span></div>
+                            <div><strong>Grade Level:</strong> <span id="studentGrade">-</span></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Fee Info Display -->
+                    <div id="feeInfo" class="info-box" style="display: none; margin-bottom: 1.5rem;">
+                        <h4 style="margin: 0 0 0.5rem 0; color: var(--primary-color);">Fee Information</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; font-size: 0.875rem;">
+                            <div><strong>Fee Amount:</strong> ₨<span id="feeAmount">-</span></div>
+                            <div><strong>Semester:</strong> <span id="feeSemester">-</span></div>
+                            <div><strong>Faculty:</strong> <span id="feeFaculty">-</span></div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                        <div class="form-group">
+                            <label class="form-label" for="amount_paid">Amount Paid (₨) *</label>
+                            <input type="number" id="amount_paid" name="amount_paid" class="form-control" 
+                                   placeholder="78000" min="0" step="0.01" required>
+                            <small class="form-text">Amount actually paid by the student</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="payment_date">Payment Date *</label>
+                            <input type="date" id="payment_date" name="payment_date" class="form-control" 
+                                   value="{{ date.today() }}" required>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                        <div class="form-group">
+                            <label class="form-label" for="payment_method">Payment Method *</label>
+                            <select id="payment_method" name="payment_method" class="form-control" required>
+                                <option value="">Select payment method...</option>
+                                <option value="cash">Cash</option>
+                                <option value="bank_transfer">Bank Transfer</option>
+                                <option value="online">Online Payment</option>
+                                <option value="card">Card Payment</option>
+                                <option value="cheque">Cheque</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="transaction_id">Transaction ID / Reference</label>
+                            <input type="text" id="transaction_id" name="transaction_id" class="form-control" 
+                                   placeholder="Optional transaction reference">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 2rem;">
+                        <label class="form-label" for="remarks">Remarks</label>
+                        <textarea id="remarks" name="remarks" class="form-control" rows="3" 
+                                  placeholder="Optional remarks about this payment..."></textarea>
+                    </div>
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <a href="{{ url_for('admin_fees') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Fee Management
+                        </a>
+                        
+                        <div style="display: flex; gap: 1rem;">
+                            <button type="reset" class="btn btn-secondary" onclick="resetForm()">
+                                <i class="fas fa-undo"></i> Reset
+                            </button>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-money-bill"></i> Record Payment
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Quick Payment Tips -->
+        <div class="card" style="margin-top: 2rem;">
+            <div class="card-header">
+                <h3 class="card-title">Payment Recording Tips</h3>
+            </div>
+            <div class="card-body">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+                    <div style="padding: 1rem; background: #e0f2fe; border-radius: 6px; border-left: 4px solid #0277bd;">
+                        <h4 style="margin: 0 0 0.5rem 0; font-size: 0.875rem; color: #0277bd;">Partial Payments</h4>
+                        <p style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">
+                            Students can make partial payments. Record each payment separately and the system will track the balance.
+                        </p>
+                    </div>
+                    
+                    <div style="padding: 1rem; background: #f3e5f5; border-radius: 6px; border-left: 4px solid #7b1fa2;">
+                        <h4 style="margin: 0 0 0.5rem 0; font-size: 0.875rem; color: #7b1fa2;">Transaction Reference</h4>
+                        <p style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">
+                            Always record bank transaction IDs or receipt numbers for digital payments for easy tracking.
+                        </p>
+                    </div>
+                    
+                    <div style="padding: 1rem; background: #e8f5e8; border-radius: 6px; border-left: 4px solid #2e7d32;">
+                        <h4 style="margin: 0 0 0.5rem 0; font-size: 0.875rem; color: #2e7d32;">Auto Receipt</h4>
+                        <p style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">
+                            A unique receipt number will be automatically generated when you save the payment.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--gray-300);
+    border-radius: 6px;
+    font-size: 0.875rem;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus {
+    outline: 0;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(79, 70, 229, 0.25);
+}
+
+.form-text {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.info-box {
+    padding: 1rem;
+    background: var(--gray-50);
+    border-radius: 6px;
+    border-left: 4px solid var(--primary-color);
+}
+
+select.form-control {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.5rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    padding-right: 2.5rem;
+}
+</style>
+
+<script>
+function updateStudentInfo() {
+    const studentSelect = document.getElementById('student_id');
+    const selectedOption = studentSelect.options[studentSelect.selectedIndex];
+    const studentInfo = document.getElementById('studentInfo');
+    
+    if (selectedOption.value) {
+        document.getElementById('studentEmail').textContent = selectedOption.dataset.email;
+        document.getElementById('studentGrade').textContent = selectedOption.dataset.grade;
+        studentInfo.style.display = 'block';
+    } else {
+        studentInfo.style.display = 'none';
+    }
+}
+
+function updateFeeInfo() {
+    const feeSelect = document.getElementById('fee_structure_id');
+    const selectedOption = feeSelect.options[feeSelect.selectedIndex];
+    const feeInfo = document.getElementById('feeInfo');
+    const amountPaid = document.getElementById('amount_paid');
+    
+    if (selectedOption.value) {
+        document.getElementById('feeAmount').textContent = parseFloat(selectedOption.dataset.amount).toLocaleString();
+        document.getElementById('feeSemester').textContent = selectedOption.dataset.semester || 'N/A';
+        document.getElementById('feeFaculty').textContent = selectedOption.dataset.faculty;
+        
+        // Pre-fill the amount paid field with the full fee amount
+        amountPaid.value = selectedOption.dataset.amount;
+        
+        feeInfo.style.display = 'block';
+    } else {
+        feeInfo.style.display = 'none';
+        amountPaid.value = '';
+    }
+}
+
+function resetForm() {
+    document.getElementById('studentInfo').style.display = 'none';
+    document.getElementById('feeInfo').style.display = 'none';
+}
+
+// Set today's date as default
+document.getElementById('payment_date').value = new Date().toISOString().split('T')[0];
+</script>
+{% endblock %}

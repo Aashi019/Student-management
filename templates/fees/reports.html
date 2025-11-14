@@ -1,0 +1,260 @@
+{% extends 'base.html' %}
+
+{% block title %}Fee Reports{% endblock %}
+{% block page_title %}Fee Reports{% endblock %}
+
+{% block content %}
+<div class="content animate-fade-in-up">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+        <!-- Fee Payment Reports -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Fee Payment Reports</h3>
+            </div>
+            <div class="card-body">
+                <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+                    Export detailed fee payment information and analyze payment patterns.
+                </p>
+                
+                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                    <a href="{{ url_for('export_fee_data', export_type='csv') }}" class="btn btn-primary">
+                        <i class="fas fa-file-csv"></i> Export as CSV
+                    </a>
+                    <a href="{{ url_for('export_fee_data', export_type='json') }}" class="btn btn-secondary">
+                        <i class="fas fa-file-code"></i> Export as JSON
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Fees Report -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Pending Fees Report</h3>
+            </div>
+            <div class="card-body">
+                <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+                    Generate reports for students with outstanding fee payments.
+                </p>
+                
+                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                    <button onclick="generatePendingFeesReport()" class="btn btn-warning">
+                        <i class="fas fa-exclamation-triangle"></i> Pending Fees List
+                    </button>
+                    <button onclick="generateOverdueReport()" class="btn btn-danger">
+                        <i class="fas fa-clock"></i> Overdue Fees Report
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Faculty-wise Reports -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Faculty-wise Reports</h3>
+            </div>
+            <div class="card-body">
+                <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+                    Analyze fee collection by faculty and semester.
+                </p>
+                
+                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                    <button onclick="generateFacultyReport()" class="btn btn-info">
+                        <i class="fas fa-graduation-cap"></i> By Faculty
+                    </button>
+                    <button onclick="generateSemesterReport()" class="btn btn-info">
+                        <i class="fas fa-calendar"></i> By Semester
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Student Summary -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Student Fee Summary</h3>
+            </div>
+            <div class="card-body">
+                <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+                    Individual student fee payment history and status.
+                </p>
+                
+                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                    <button onclick="generateStudentSummary()" class="btn btn-success">
+                        <i class="fas fa-user"></i> Student Summary
+                    </button>
+                    <button onclick="generateReceiptReport()" class="btn btn-success">
+                        <i class="fas fa-receipt"></i> Receipt Report
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Statistics -->
+    <div class="card" style="margin-top: 2rem;">
+        <div class="card-header">
+            <h2 class="card-title">Quick Statistics</h2>
+        </div>
+        <div class="card-body">
+            <div id="statisticsContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+                <div style="text-align: center;">
+                    <div style="font-size: 2rem; font-weight: bold; color: var(--primary-color);" id="totalStudents">-</div>
+                    <div style="color: var(--text-secondary);">Total Students</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 2rem; font-weight: bold; color: #48bb78;" id="paidStudents">-</div>
+                    <div style="color: var(--text-secondary);">Fully Paid</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 2rem; font-weight: bold; color: #ed8936;" id="pendingStudents">-</div>
+                    <div style="color: var(--text-secondary);">With Pending</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 2rem; font-weight: bold; color: #dc2626;" id="overdueStudents">-</div>
+                    <div style="color: var(--text-secondary);">Overdue</div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 2rem; text-align: center;">
+                <button onclick="loadStatistics()" class="btn btn-secondary">
+                    <i class="fas fa-sync-alt"></i> Refresh Statistics
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Load statistics on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadStatistics();
+});
+
+function loadStatistics() {
+    // This would typically fetch data from an API endpoint
+    // For now, we'll show placeholder values
+    document.getElementById('totalStudents').textContent = '10';
+    document.getElementById('paidStudents').textContent = '6';
+    document.getElementById('pendingStudents').textContent = '4';
+    document.getElementById('overdueStudents').textContent = '2';
+}
+
+function generatePendingFeesReport() {
+    if (confirm('Generate pending fees report? This will include all students with outstanding payments.')) {
+        // Create a simple report
+        const reportData = `
+Fee Payment Report - Pending Fees
+Generated on: ${new Date().toLocaleDateString()}
+
+This report would include:
+- Student details with pending fees
+- Amount pending per student
+- Due dates and overdue status
+- Faculty-wise breakdown
+
+Note: This is a demo. In a real implementation, this would fetch actual data from the server.
+        `;
+        
+        downloadTextFile(reportData, 'pending_fees_report.txt');
+    }
+}
+
+function generateOverdueReport() {
+    if (confirm('Generate overdue fees report? This will include all students with overdue payments.')) {
+        const reportData = `
+Fee Payment Report - Overdue Fees
+Generated on: ${new Date().toLocaleDateString()}
+
+This report would include:
+- Students with overdue payments
+- Days overdue
+- Amount overdue
+- Contact information for follow-up
+
+Note: This is a demo. In a real implementation, this would fetch actual data from the server.
+        `;
+        
+        downloadTextFile(reportData, 'overdue_fees_report.txt');
+    }
+}
+
+function generateFacultyReport() {
+    const reportData = `
+Fee Payment Report - Faculty-wise Analysis
+Generated on: ${new Date().toLocaleDateString()}
+
+This report would include:
+- Fee collection by faculty
+- BSC-CSIT vs BCA comparison
+- Semester-wise breakdown
+- Payment completion rates
+
+Note: This is a demo. In a real implementation, this would fetch actual data from the server.
+    `;
+    
+    downloadTextFile(reportData, 'faculty_fees_report.txt');
+}
+
+function generateSemesterReport() {
+    const reportData = `
+Fee Payment Report - Semester-wise Analysis
+Generated on: ${new Date().toLocaleDateString()}
+
+This report would include:
+- Fee collection by semester
+- 1st to 8th semester breakdown
+- Payment trends
+- Completion rates per semester
+
+Note: This is a demo. In a real implementation, this would fetch actual data from the server.
+    `;
+    
+    downloadTextFile(reportData, 'semester_fees_report.txt');
+}
+
+function generateStudentSummary() {
+    const reportData = `
+Fee Payment Report - Student Summary
+Generated on: ${new Date().toLocaleDateString()}
+
+This report would include:
+- Individual student payment history
+- Total fees vs paid amounts
+- Payment methods used
+- Receipt numbers and dates
+
+Note: This is a demo. In a real implementation, this would fetch actual data from the server.
+    `;
+    
+    downloadTextFile(reportData, 'student_fees_summary.txt');
+}
+
+function generateReceiptReport() {
+    const reportData = `
+Fee Payment Report - Receipt Report
+Generated on: ${new Date().toLocaleDateString()}
+
+This report would include:
+- All issued receipts
+- Receipt numbers and amounts
+- Payment methods
+- Date-wise receipt listing
+
+Note: This is a demo. In a real implementation, this would fetch actual data from the server.
+    `;
+    
+    downloadTextFile(reportData, 'receipts_report.txt');
+}
+
+function downloadTextFile(content, filename) {
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    window.URL.revokeObjectURL(url);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ 'Edit' if grade else 'Add' }} Grade - Student Management System{% endblock %}
+{% block page_title %}{{ 'Edit' if grade else 'Add' }} Grade{% endblock %}
+
+{% block header_actions %}
+    <a href="{{ url_for('grades') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i>
+        Back to Grades
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="content animate-fade-in-up">
+    <div class="card" style="max-width: 800px; margin: 0 auto;">
+        <div class="card-header">
+            <h3>{{ 'Edit' if grade else 'Add' }} Grade</h3>
+            <p style="color: var(--text-tertiary); font-size: 0.875rem; margin-top: 0.25rem;">
+                {{ 'Update' if grade else 'Record' }} student grade information
+            </p>
+        </div>
+        <div class="card-body">
+            <form method="POST">
+                {{ form.hidden_tag() }}
+                
+                <div class="form-group">
+                    {{ form.student_id.label(class="form-label") }}
+                    {{ form.student_id(class="form-control") }}
+                    {% if form.student_id.errors %}
+                        <span class="text-danger">{{ form.student_id.errors[0] }}</span>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    {{ form.subject_id.label(class="form-label") }}
+                    {{ form.subject_id(class="form-control") }}
+                    {% if form.subject_id.errors %}
+                        <span class="text-danger">{{ form.subject_id.errors[0] }}</span>
+                    {% endif %}
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        {{ form.grade_value.label(class="form-label") }}
+                        {{ form.grade_value(class="form-control", id="gradeInput", oninput="calculateLetterGrade()") }}
+                        {% if form.grade_value.errors %}
+                            <span class="text-danger">{{ form.grade_value.errors[0] }}</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Letter Grade</label>
+                        <input type="text" class="form-control" id="letterGrade" readonly 
+                               style="background: var(--gray-100); font-weight: 600; font-size: 1.125rem;">
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        {{ form.grade_type.label(class="form-label") }}
+                        {{ form.grade_type(class="form-control") }}
+                        {% if form.grade_type.errors %}
+                            <span class="text-danger">{{ form.grade_type.errors[0] }}</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-group">
+                        {{ form.semester.label(class="form-label") }}
+                        {{ form.semester(class="form-control") }}
+                        {% if form.semester.errors %}
+                            <span class="text-danger">{{ form.semester.errors[0] }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        {{ form.date_recorded.label(class="form-label") }}
+                        {{ form.date_recorded(class="form-control", type="date") }}
+                        {% if form.date_recorded.errors %}
+                            <span class="text-danger">{{ form.date_recorded.errors[0] }}</span>
+                        {% endif %}
+                    </div>
+                    
+                </div>
+                
+                <div class="form-group">
+                    {{ form.comments.label(class="form-label") }}
+                    {{ form.comments(class="form-control", rows=3) }}
+                    {% if form.comments.errors %}
+                        <span class="text-danger">{{ form.comments.errors[0] }}</span>
+                    {% endif %}
+                </div>
+                
+                <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--border-color);">
+                    <a href="{{ url_for('grades') }}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i>
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i>
+                        {{ 'Update' if grade else 'Save' }} Grade
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+
+<script>
+function calculateLetterGrade() {
+    const gradeValue = parseFloat(document.getElementById('gradeInput').value);
+    const letterGradeInput = document.getElementById('letterGrade');
+    
+    if (isNaN(gradeValue) || gradeValue < 0 || gradeValue > 100) {
+        letterGradeInput.value = '';
+        letterGradeInput.style.color = '';
+        return;
+    }
+    
+    let letterGrade = '';
+    let color = '';
+    
+    if (gradeValue >= 90) {
+        letterGrade = 'A';
+        color = 'var(--success-color)';
+    } else if (gradeValue >= 80) {
+        letterGrade = 'B';
+        color = 'var(--primary-color)';
+    } else if (gradeValue >= 70) {
+        letterGrade = 'C';
+        color = 'var(--warning-color)';
+    } else if (gradeValue >= 60) {
+        letterGrade = 'D';
+        color = 'var(--danger-color)';
+    } else {
+        letterGrade = 'F';
+        color = 'var(--gray-600)';
+    }
+    
+    letterGradeInput.value = letterGrade;
+    letterGradeInput.style.color = color;
+}
+
+// Calculate on page load if editing
+window.addEventListener('DOMContentLoaded', function() {
+    calculateLetterGrade();
+});
+</script>
+{% endblock %}

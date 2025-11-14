@@ -1,0 +1,452 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Fees - Teacher View{% endblock %}
+{% block page_title %}Student Fees{% endblock %}
+
+{% block content %}
+<div class="content animate-fade-in-up">
+    <!-- Summary Info -->
+    <div class="card" style="margin-bottom: 2rem; background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: white;">
+        <div class="card-body">
+            <h2 style="margin: 0 0 0.5rem 0;">Fee Status - My Students</h2>
+            <p style="margin: 0; opacity: 0.9;">View fee payment status for students in your assigned classes</p>
+        </div>
+    </div>
+
+    <!-- Fee Structures Overview -->
+    <div class="card" style="margin-bottom: 2rem;">
+        <div class="card-header">
+            <h2 class="card-title">Fee Structures</h2>
+            <div style="margin-top: 0.5rem;">
+                <small style="color: var(--text-secondary);">
+                    <i class="fas fa-eye"></i> 
+                    Current fee structures for all faculties (View Only)
+                </small>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if fee_structures %}
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem;">
+                    {% for faculty_name, faculty_fees in fee_structures|groupby('faculty.name') %}
+                    <div class="fee-structure-card">
+                        <div class="fee-structure-header">
+                            <h3>{{ faculty_name }}</h3>
+                            <span class="faculty-badge">{{ faculty_fees|list|length }} Fee Types</span>
+                        </div>
+                        <div class="fee-structure-body">
+                            {% for fee in faculty_fees %}
+                            <div class="fee-item">
+                                <div class="fee-details">
+                                    <span class="fee-type">{{ fee.fee_type|title }}</span>
+                                    <span class="fee-amount">₨{{ "{:,.0f}".format(fee.amount or 0) }}</span>
+                                </div>
+                                <div class="fee-meta">
+                                    <span class="fee-semester">{{ fee.semester }}</span>
+                                    {% if fee.due_date %}
+                                    <span class="fee-due">Due: {{ fee.due_date.strftime('%b %d, %Y') }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                            <div class="fee-total">
+                                Total: ₨{{ "{:,.0f}".format(faculty_fees|map(attribute='amount')|select('number')|sum) }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                    <i class="fas fa-money-bill" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                    <p>No fee structures defined yet.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Student Fee Overview -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Student Fee Overview</h2>
+            <div style="margin-top: 0.5rem;">
+                <small style="color: var(--text-secondary);">
+                    <i class="fas fa-info-circle"></i> 
+                    You can view fee status but cannot modify payments or fee structures
+                </small>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if student_fees %}
+                <div style="overflow-x: auto;">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Student ID</th>
+                                <th>Grade Level</th>
+                                <th>Total Fees</th>
+                                <th>Amount Paid</th>
+                                <th>Pending Amount</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in student_fees %}
+                            <tr>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                        <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--primary-color); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                                            {{ item.student.first_name[0] }}{{ item.student.last_name[0] }}
+                                        </div>
+                                        <div>
+                                            <div style="font-weight: 500;">{{ item.student.first_name }} {{ item.student.last_name }}</div>
+                                            <div style="font-size: 0.875rem; color: var(--text-secondary);">{{ item.student.email }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ item.student.student_id }}</td>
+                                <td>{{ item.student.grade_level }}</td>
+                                <td>₨{{ "{:,.0f}".format(item.total_fees or 0) }}</td>
+                                <td>₨{{ "{:,.0f}".format(item.total_paid or 0) }}</td>
+                                <td>₨{{ "{:,.0f}".format(item.total_pending or 0) }}</td>
+                                <td>
+                                    {% if item.total_pending <= 0 %}
+                                        <span class="status-badge status-paid">Paid</span>
+                                    {% elif item.has_overdue %}
+                                        <span class="status-badge status-overdue">Overdue</span>
+                                    {% else %}
+                                        <span class="status-badge status-pending">Pending</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <button onclick="viewStudentFeeDetail({{ item.student.id }})" class="btn btn-secondary btn-sm">
+                                        <i class="fas fa-eye"></i> View Details
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Summary Statistics -->
+                <div style="margin-top: 2rem; padding: 1.5rem; background: var(--gray-50); border-radius: 8px;">
+                    <h3 style="margin: 0 0 1rem 0; font-size: 1.125rem;">Summary</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                        <div>
+                            <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Total Students</div>
+                            <div style="font-size: 1.5rem; font-weight: 600;">{{ student_fees|length }}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Students with Pending Fees</div>
+                            <div style="font-size: 1.5rem; font-weight: 600; color: #dc2626;">
+                                {{ student_fees|selectattr('total_pending', '>', 0)|list|length }}
+                            </div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Students with Overdue Fees</div>
+                            <div style="font-size: 1.5rem; font-weight: 600; color: #b91c1c;">
+                                {{ student_fees|selectattr('has_overdue', 'equalto', true)|list|length }}
+                            </div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Fully Paid Students</div>
+                            <div style="font-size: 1.5rem; font-weight: 600; color: #059669;">
+                                {{ student_fees|selectattr('total_pending', 'equalto', 0)|list|length }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+                    <i class="fas fa-users" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                    <h3>No Students Assigned</h3>
+                    <p>You don't have any students assigned to your classes yet.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    {% if student_fees %}
+    <div class="card" style="margin-top: 2rem;">
+        <div class="card-header">
+            <h2 class="card-title">Quick Actions</h2>
+        </div>
+        <div class="card-body">
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <button onclick="exportPendingFees()" class="btn btn-secondary">
+                    <i class="fas fa-download"></i> Download Pending Fees List
+                </button>
+                <button onclick="printOverdueFees()" class="btn btn-secondary">
+                    <i class="fas fa-print"></i> Print Overdue Fees Report
+                </button>
+                <a href="{{ url_for('fee_reports') }}" class="btn btn-primary">
+                    <i class="fas fa-chart-bar"></i> View Detailed Reports
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.fee-structure-card {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-elevated);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+.fee-structure-header {
+    padding: 1rem;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.fee-structure-header h3 {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.faculty-badge {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.fee-structure-body {
+    padding: 1rem;
+}
+
+.fee-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.fee-item:last-of-type {
+    border-bottom: none;
+}
+
+.fee-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.fee-type {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.fee-amount {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.fee-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    text-align: right;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.fee-semester {
+    background: var(--bg-tertiary);
+    padding: 0.125rem 0.5rem;
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+}
+
+.fee-due {
+    color: var(--warning-color);
+}
+
+.fee-total {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 2px solid var(--primary-color);
+    text-align: right;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.status-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.status-paid {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status-overdue {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--gray-200);
+    text-align: left;
+    vertical-align: middle;
+}
+
+.table th {
+    font-weight: 600;
+    background: var(--gray-50);
+}
+
+.btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+}
+</style>
+
+<script>
+function viewStudentFeeDetail(studentId) {
+    alert('Student Fee Details\n\nThis would show detailed fee breakdown for student ID: ' + studentId + '\n\nFeature can be enhanced to show a modal with complete fee payment history.');
+}
+
+function exportPendingFees() {
+    // Get students with pending fees
+    const pendingStudents = [];
+    {% for item in student_fees %}
+        {% if item.total_pending > 0 %}
+            pendingStudents.push({
+                student_id: '{{ item.student.student_id }}',
+                name: '{{ item.student.first_name }} {{ item.student.last_name }}',
+                pending_amount: {{ item.total_pending }},
+                has_overdue: {{ 'true' if item.has_overdue else 'false' }}
+            });
+        {% endif %}
+    {% endfor %}
+    
+    if (pendingStudents.length === 0) {
+        alert('No students with pending fees found.');
+        return;
+    }
+    
+    // Create CSV content
+    let csvContent = 'Student ID,Student Name,Pending Amount,Has Overdue\n';
+    pendingStudents.forEach(student => {
+        csvContent += `${student.student_id},"${student.name}",${student.pending_amount},${student.has_overdue}\n`;
+    });
+    
+    // Download CSV
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'pending_fees_' + new Date().toISOString().split('T')[0] + '.csv';
+    link.click();
+    window.URL.revokeObjectURL(url);
+}
+
+function printOverdueFees() {
+    // Get students with overdue fees
+    const overdueStudents = [];
+    {% for item in student_fees %}
+        {% if item.has_overdue %}
+            overdueStudents.push({
+                student_id: '{{ item.student.student_id }}',
+                name: '{{ item.student.first_name }} {{ item.student.last_name }}',
+                pending_amount: {{ item.total_pending }}
+            });
+        {% endif %}
+    {% endfor %}
+    
+    if (overdueStudents.length === 0) {
+        alert('No students with overdue fees found.');
+        return;
+    }
+    
+    // Create print content
+    let printContent = `
+        <html>
+        <head>
+            <title>Overdue Fees Report</title>
+            <style>
+                body { font-family: Arial, sans-serif; }
+                table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                th { background-color: #f4f4f4; }
+                .header { text-align: center; margin-bottom: 1rem; }
+                .date { font-size: 0.9rem; color: #666; }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h2>Overdue Fees Report</h2>
+                <div class="date">Generated on: ${new Date().toLocaleDateString()}</div>
+                <div class="date">Teacher: {{ current_user.first_name or current_user.username }}</div>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Student ID</th>
+                        <th>Student Name</th>
+                        <th>Pending Amount (₨)</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    overdueStudents.forEach(student => {
+        printContent += `
+            <tr>
+                <td>${student.student_id}</td>
+                <td>${student.name}</td>
+                <td>${student.pending_amount.toLocaleString()}</td>
+            </tr>
+        `;
+    });
+    
+    printContent += `
+                </tbody>
+            </table>
+            <div style="margin-top: 2rem; font-size: 0.9rem; color: #666;">
+                Total students with overdue fees: ${overdueStudents.length}
+            </div>
+        </body>
+        </html>
+    `;
+    
+    // Open print window
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.print();
+}
+</script>
+{% endblock %}
