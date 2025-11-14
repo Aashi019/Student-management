@@ -38,7 +38,8 @@ app.config['WTF_CSRF_TIME_LIMIT'] = None
 
 # Initialize extensions
 db.init_app(app)
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+# SocketIO for Vercel serverless compatibility
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet', logger=False, engineio_logger=False)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 login_manager.login_message = 'Please log in to access this page.'
@@ -50,13 +51,21 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# Ensure upload directory exists
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+# Ensure upload directory exists (skip in serverless environment)
+try:
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+except:
+    pass  # Skip in serverless environment
 
-# Register API Blueprint
-from api_routes import api_bp, set_socketio
-app.register_blueprint(api_bp)
-set_socketio(socketio)  # Pass socketio instance to api_routes
+# Register API Blueprint (with error handling for serverless)
+try:
+    from api_routes import api_bp, set_socketio
+    app.register_blueprint(api_bp)
+    set_socketio(socketio)  # Pass socketio instance to api_routes
+except ImportError as e:
+    print(f"Warning: Could not import api_routes: {e}")
+except Exception as e:
+    print(f"Warning: Error setting up API routes: {e}")
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -1695,51 +1704,59 @@ def student_change_password():
 
 # Initialize Database
 def init_db():
-    with app.app_context():
-        db.create_all()
-        
-        # Create default admin user if not exists
-        if not User.query.filter_by(username='admin').first():
-            admin = User(username='admin', email='admin@school.com', role='admin')
-            admin.set_password('admin123')
-            db.session.add(admin)
-        
-        # Create default teacher users if not exist
-        if not User.query.filter_by(username='teacher').first():
-            teacher = User(username='teacher', email='teacher@school.com', role='teacher')
-            teacher.set_password('teacher123')
-            db.session.add(teacher)
-        
-        # Create student user if not exists
-        if not User.query.filter_by(username='student').first():
-            student_user = User(username='student', email='student@school.com', role='student')
-            student_user.set_password('student123')
-            db.session.add(student_user)
+    """Initialize database with error handling for serverless deployment"""
+    try:
+        with app.app_context():
+            # Only create tables, don't modify data in serverless
+            db.create_all()
             
-        # Create sample subjects if not exist
-        if not Subject.query.first():
-            subjects = [
-                Subject(name='Mathematics', code='MATH101', credits=4, department='Mathematics'),
-                Subject(name='English', code='ENG101', credits=3, department='English'),
-                Subject(name='Science', code='SCI101', credits=4, department='Science'),
-                Subject(name='History', code='HIST101', credits=3, department='Social Studies'),
-                Subject(name='Physical Education', code='PE101', credits=2, department='PE')
-            ]
-            for subject in subjects:
-                db.session.add(subject)
-        
-        # Create current academic year if not exists
-        if not AcademicYear.query.filter_by(is_current=True).first():
-            current_year = AcademicYear(
-                year='2024-25',
-                start_date=datetime(2024, 8, 1).date(),
-                end_date=datetime(2025, 7, 31).date(),
-                is_current=True
-            )
-            db.session.add(current_year)
-        
-        db.session.commit()
-        print("Database initialized successfully!")
+            # Skip data initialization in serverless environment
+            if not os.getenv('VERCEL'):
+                # Create default admin user if not exists
+                if not User.query.filter_by(username='admin').first():
+                    admin = User(username='admin', email='admin@school.com', role='admin')
+                    admin.set_password('admin123')
+                    db.session.add(admin)
+                
+                # Create default teacher users if not exist
+                if not User.query.filter_by(username='teacher').first():
+                    teacher = User(username='teacher', email='teacher@school.com', role='teacher')
+                    teacher.set_password('teacher123')
+                    db.session.add(teacher)
+                
+                # Create student user if not exists
+                if not User.query.filter_by(username='student').first():
+                    student_user = User(username='student', email='student@school.com', role='student')
+                    student_user.set_password('student123')
+                    db.session.add(student_user)
+                    
+                # Create sample subjects if not exist
+                if not Subject.query.first():
+                    subjects = [
+                        Subject(name='Mathematics', code='MATH101', credits=4, department='Mathematics'),
+                        Subject(name='English', code='ENG101', credits=3, department='English'),
+                        Subject(name='Science', code='SCI101', credits=4, department='Science'),
+                        Subject(name='History', code='HIST101', credits=3, department='Social Studies'),
+                        Subject(name='Physical Education', code='PE101', credits=2, department='PE')
+                    ]
+                    for subject in subjects:
+                        db.session.add(subject)
+                
+                # Create current academic year if not exists
+                if not AcademicYear.query.filter_by(is_current=True).first():
+                    current_year = AcademicYear(
+                        year='2024-25',
+                        start_date=datetime(2024, 8, 1).date(),
+                        end_date=datetime(2025, 7, 31).date(),
+                        is_current=True
+                    )
+                    db.session.add(current_year)
+                
+                db.session.commit()
+                print("Database initialized successfully!")
+    except Exception as e:
+        print(f"Database initialization warning: {e}")
+        # Don't fail startup due to database issues
         print("Login credentials:")
         print("  Admin: admin / admin123")
         print("  Teacher: teacher / teacher123")
@@ -2309,3 +2326,9 @@ def export_fee_data(export_type):
 if __name__ == '__main__':
     init_db()
     socketio.run(app, debug=True, host='0.0.0.0', port=5000)
+else:
+    # Vercel serverless handler
+    init_db()
+
+# Export app for Vercel
+application = app
