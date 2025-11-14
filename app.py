@@ -12,7 +12,6 @@ from datetime import datetime, timedelta
 from sqlalchemy import func, desc, case
 import io
 import csv
-from io import StringIO
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.lib import colors
@@ -38,8 +37,8 @@ app.config['WTF_CSRF_TIME_LIMIT'] = None
 
 # Initialize extensions
 db.init_app(app)
-# SocketIO for Vercel serverless compatibility
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet', logger=False, engineio_logger=False)
+# SocketIO configuration - simplified for development
+socketio = SocketIO(app, cors_allowed_origins="*", logger=False, engineio_logger=False)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 login_manager.login_message = 'Please log in to access this page.'
@@ -531,7 +530,7 @@ def export_students():
     
     if format_type == 'csv':
         # CSV export
-        output = StringIO()
+        output = io.StringIO()
         writer = csv.writer(output)
         
         # Write header
@@ -774,9 +773,8 @@ def api_export_subjects():
     
     if format_type == 'csv':
         import csv
-        from io import StringIO
         
-        output = StringIO()
+        output = io.StringIO()
         writer = csv.writer(output)
         
         # Write header
@@ -849,9 +847,8 @@ def export_grades():
     
     if format_type == 'csv':
         import csv
-        from io import StringIO
         
-        output = StringIO()
+        output = io.StringIO()
         writer = csv.writer(output)
         
         # Write header
@@ -913,9 +910,8 @@ def export_attendance():
     
     if format_type == 'csv':
         import csv
-        from io import StringIO
         
-        output = StringIO()
+        output = io.StringIO()
         writer = csv.writer(output)
         
         # Write header
@@ -1707,53 +1703,84 @@ def init_db():
     """Initialize database with error handling for serverless deployment"""
     try:
         with app.app_context():
-            # Only create tables, don't modify data in serverless
+            # Check if database is already initialized
+            try:
+                if User.query.first() is not None:
+                    print("Database already initialized, skipping...")
+                    return
+            except Exception:
+                # If we can't query, database might not exist yet
+                pass
+                
+            print("Initializing database for first time...")
+            # Create tables
             db.create_all()
             
             # Skip data initialization in serverless environment
             if not os.getenv('VERCEL'):
                 # Create default admin user if not exists
-                if not User.query.filter_by(username='admin').first():
-                    admin = User(username='admin', email='admin@school.com', role='admin')
-                    admin.set_password('admin123')
-                    db.session.add(admin)
+                try:
+                    if not User.query.filter_by(username='admin').first():
+                        admin = User(username='admin', email='admin@school.com', role='admin')
+                        admin.set_password('admin123')
+                        db.session.add(admin)
+                except Exception:
+                    pass
                 
                 # Create default teacher users if not exist
-                if not User.query.filter_by(username='teacher').first():
-                    teacher = User(username='teacher', email='teacher@school.com', role='teacher')
-                    teacher.set_password('teacher123')
-                    db.session.add(teacher)
+                try:
+                    if not User.query.filter_by(username='teacher').first():
+                        teacher = User(username='teacher', email='teacher@school.com', role='teacher')
+                        teacher.set_password('teacher123')
+                        db.session.add(teacher)
+                except Exception:
+                    pass
                 
                 # Create student user if not exists
-                if not User.query.filter_by(username='student').first():
-                    student_user = User(username='student', email='student@school.com', role='student')
-                    student_user.set_password('student123')
-                    db.session.add(student_user)
+                try:
+                    if not User.query.filter_by(username='student').first():
+                        student_user = User(username='student', email='student@school.com', role='student')
+                        student_user.set_password('student123')
+                        db.session.add(student_user)
+                except Exception:
+                    pass
                     
                 # Create sample subjects if not exist
-                if not Subject.query.first():
-                    subjects = [
-                        Subject(name='Mathematics', code='MATH101', credits=4, department='Mathematics'),
-                        Subject(name='English', code='ENG101', credits=3, department='English'),
-                        Subject(name='Science', code='SCI101', credits=4, department='Science'),
-                        Subject(name='History', code='HIST101', credits=3, department='Social Studies'),
-                        Subject(name='Physical Education', code='PE101', credits=2, department='PE')
-                    ]
-                    for subject in subjects:
-                        db.session.add(subject)
+                try:
+                    if not Subject.query.first():
+                        subjects = [
+                            Subject(name='Mathematics', code='MATH101', credits=4, department='Mathematics'),
+                            Subject(name='English', code='ENG101', credits=3, department='English'),
+                            Subject(name='Science', code='SCI101', credits=4, department='Science'),
+                            Subject(name='History', code='HIST101', credits=3, department='Social Studies'),
+                            Subject(name='Physical Education', code='PE101', credits=2, department='PE')
+                        ]
+                        for subject in subjects:
+                            db.session.add(subject)
+                except Exception:
+                    pass
                 
                 # Create current academic year if not exists
-                if not AcademicYear.query.filter_by(is_current=True).first():
-                    current_year = AcademicYear(
-                        year='2024-25',
-                        start_date=datetime(2024, 8, 1).date(),
-                        end_date=datetime(2025, 7, 31).date(),
-                        is_current=True
-                    )
-                    db.session.add(current_year)
+                try:
+                    if not AcademicYear.query.filter_by(is_current=True).first():
+                        current_year = AcademicYear(
+                            year='2024-25',
+                            start_date=datetime(2024, 8, 1).date(),
+                            end_date=datetime(2025, 7, 31).date(),
+                            is_current=True
+                        )
+                        db.session.add(current_year)
+                except Exception:
+                    pass
                 
-                db.session.commit()
-                print("Database initialized successfully!")
+                try:
+                    db.session.commit()
+                    print("Database initialized successfully!")
+                except Exception as e:
+                    print(f"Error committing database changes: {e}")
+                    db.session.rollback()
+            else:
+                print("Serverless mode: skipping data initialization")
     except Exception as e:
         print(f"Database initialization warning: {e}")
         # Don't fail startup due to database issues
@@ -2324,10 +2351,14 @@ def export_fee_data(export_type):
     return redirect(url_for('fee_reports'))
 
 if __name__ == '__main__':
-    init_db()
-    socketio.run(app, debug=True, host='0.0.0.0', port=5000)
+    # Only initialize database if running directly (not on reload)
+    import sys
+    if '--reload' not in sys.argv and os.environ.get('WERKZEUG_RUN_MAIN') != 'true':
+        init_db()
+    # Use regular Flask development server to avoid hanging
+    app.run(debug=True, host='0.0.0.0', port=5000)
 else:
-    # Vercel serverless handler
+    # Vercel serverless handler - always initialize
     init_db()
 
 # Export app for Vercel
