@@ -25,9 +25,11 @@ from openpyxl.styles import Font, PatternFill, Alignment
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-change-in-production'
 
-# Database configuration - using Neon PostgreSQL
-DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://neondb_owner:npg_XCrcYpHg9SO8@ep-blue-snow-ah4jpxiz-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require')
-app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+# Database configuration - Force PostgreSQL usage (no SQLite fallback)
+DATABASE_URL = 'postgresql://neondb_owner:npg_XCrcYpHg9SO8@ep-blue-snow-ah4jpxiz-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require'
+
+# Always use Neon PostgreSQL
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', DATABASE_URL)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
